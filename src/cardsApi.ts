@@ -1,6 +1,8 @@
 import { apiGet } from './api'
 import type { Card, Rarity } from './types'
 
+const noImagePath=`${import.meta.env.BASE_URL}cards/no-image.svg`
+
 type ApiCard={id:string;atk:number;def:number;rarity:Rarity;summary:string|null;category:string|null;image_url:string|null;wikipedia_title:string;wikipedia_url:string}
 type CardsResponse={cards:ApiCard[];total:number|null;searchHasMore?:boolean;quantities:Record<string,number>;ownedCardIds:string[];wishlistCardIds:string[];friendOwners:Record<string,unknown>}
 type CollectionResponse={collection:unknown[];total:number|null;rarityCounts?:Record<string,number>}
@@ -23,7 +25,7 @@ function mapResponse(data:CardsResponse,page=0):{cards:Card[];total:number}{
  const wanted=new Set(data.wishlistCardIds??[]);const owned=new Set(data.ownedCardIds??[])
  const minimumTotal=page*50+data.cards.length+(data.searchHasMore?1:0)
  return {total:typeof data.total==='number'?data.total:minimumTotal,cards:data.cards.map(card=>({
-  id:card.id,title:card.wikipedia_title,description:card.summary??card.category??'Article Wikipédia',image:card.image_url??'/cards/no-image.svg',rarity:card.rarity,atk:card.atk,def:card.def,owned:owned.has(card.id)?(data.quantities?.[card.id]??1):0,wanted:wanted.has(card.id),contacts:ownerNames(data.friendOwners?.[card.id]),category:card.category??'Wikipédia'
+  id:card.id,title:card.wikipedia_title,description:card.summary??card.category??'Article Wikipédia',image:card.image_url??noImagePath,rarity:card.rarity,atk:card.atk,def:card.def,owned:owned.has(card.id)?(data.quantities?.[card.id]??1):0,wanted:wanted.has(card.id),contacts:ownerNames(data.friendOwners?.[card.id]),category:card.category??'Wikipédia'
  }))}
 }
 
@@ -47,7 +49,7 @@ function mapCollectionItem(value:unknown):Card|null{
  const row=value as Record<string,unknown>;const raw=(row.card&&typeof row.card==='object'?row.card:row) as Partial<ApiCard>&Record<string,unknown>
  if(typeof raw.id!=='string'||typeof raw.wikipedia_title!=='string')return null
  const quantity=Number(row.quantity??row.count??row.qty??1)
- return{id:raw.id,title:raw.wikipedia_title,description:raw.summary??raw.category??'Article Wikipédia',image:raw.image_url??'/cards/no-image.svg',rarity:(raw.rarity??'C') as Rarity,atk:Number(raw.atk??0),def:Number(raw.def??0),owned:Number.isFinite(quantity)?quantity:1,wanted:false,contacts:[],category:raw.category??'Wikipédia'}
+ return{id:raw.id,title:raw.wikipedia_title,description:raw.summary??raw.category??'Article Wikipédia',image:raw.image_url??noImagePath,rarity:(raw.rarity??'C') as Rarity,atk:Number(raw.atk??0),def:Number(raw.def??0),owned:Number.isFinite(quantity)?quantity:1,wanted:false,contacts:[],category:raw.category??'Wikipédia'}
 }
 
 export async function queryCollection({page=0,query='',rarity,sort='rarity'}:CardQuery):Promise<{cards:Card[];total:number}>{
@@ -65,7 +67,7 @@ const wishlistCardPending=new Map<string,Promise<Card>>()
 export async function loadWishlistCard(id:string):Promise<Card>{
  const cached=wishlistCardCache.get(id);if(cached)return cached
  const pending=wishlistCardPending.get(id);if(pending)return pending
- const request=(async()=>{const detail=await apiGet<ApiCard>(`/cards/${encodeURIComponent(id)}`);const exact=(await searchCards(detail.wikipedia_title)).find(card=>card.id===id);const card=exact??{id:detail.id,title:detail.wikipedia_title,description:detail.summary??detail.category??'Article Wikipédia',image:detail.image_url??'/cards/no-image.svg',rarity:detail.rarity,atk:detail.atk,def:detail.def,owned:0,wanted:false,contacts:[],category:detail.category??'Wikipédia'};wishlistCardCache.set(id,card);return card})()
+ const request=(async()=>{const detail=await apiGet<ApiCard>(`/cards/${encodeURIComponent(id)}`);const exact=(await searchCards(detail.wikipedia_title)).find(card=>card.id===id);const card=exact??{id:detail.id,title:detail.wikipedia_title,description:detail.summary??detail.category??'Article Wikipédia',image:detail.image_url??noImagePath,rarity:detail.rarity,atk:detail.atk,def:detail.def,owned:0,wanted:false,contacts:[],category:detail.category??'Wikipédia'};wishlistCardCache.set(id,card);return card})()
  wishlistCardPending.set(id,request)
  try{return await request}finally{wishlistCardPending.delete(id)}
 }
