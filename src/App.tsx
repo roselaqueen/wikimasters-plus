@@ -1,86 +1,187 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { Archive, ArrowLeftRight, Bell, BookOpen, Box, Check, ChevronLeft, ChevronRight, Coins, ExternalLink, Heart, LayoutGrid, List, Mail, Menu, MessageSquare, Moon, PackageOpen, Palette, Search, Settings as SettingsIcon, ShoppingBag, SlidersHorizontal, Sun, UserRound, UsersRound, X } from 'lucide-react'
-import { cards as seedCards, contacts } from './data'
-import { API_MODE } from './api'
-import { defaults, loadSettings, saveSettings } from './storage'
-import type { Card, Page, Rarity, Settings } from './types'
-import WishlistsPage from './WishlistsPage'
-import LoginScreen from './LoginScreen'
+import AppShell from './components/layout/AppShell'
+import type { TradeDraft } from './components/trades/TradeComposer'
+import CardsPage from './pages/CardsPage'
+import LoginPage from './pages/LoginPage'
+import TradesPage from './pages/TradesPage'
+import WishlistsPage from './pages/WishlistsPage'
 import { supabase } from './auth'
-import { loadCards, loadWishlistCard, queryCollection, queryGlobalCards } from './cardsApi'
-import { getWishlists } from './wishlistDb'
-import CardItem from './CardItem'
-import CardDetailModal from './CardDetailModal'
-import TradesPage from './TradesPage'
-import type { TradeDraft } from './TradeComposer'
+import { loadCards } from './cardsApi'
+import { loadSettings, saveSettings } from './storage'
+import type { Card, Page, Settings } from './types'
 
-const nav:{id:Page;label:string;icon:typeof Box}[]=[
- {id:'collection',label:'Collection',icon:Archive},{id:'wishlists',label:'Listes de souhaits',icon:Heart},{id:'cards',label:'Toutes les cartes',icon:LayoutGrid},{id:'trades',label:'Échanges',icon:ArrowLeftRight},
-]
-const rarityLabels:Record<Rarity,string>={L:'Légendaire',UR:'Ultra rare',SR:'Super rare',R:'Rare',PC:'Peu commun',C:'Commun'}
-const pageRoutes:Record<string,Page>={collection:'collection',wishlists:'wishlists',cards:'cards',trades:'trades'}
-const routeForPage:Record<Page,string>={collection:'collection',wishlists:'wishlists',cards:'cards',packs:'collection',trades:'trades',market:'collection',profile:'collection',friends:'collection',messages:'collection',settings:'collection'}
-const pageFromHash=():Page=>pageRoutes[window.location.hash.replace(/^#\/?/,'')]??'collection'
-
-export default function App(){
- const [page,setPage]=useState<Page>(pageFromHash); const [mobile,setMobile]=useState(false)
- const [settings,setSettings]=useState<Settings>(loadSettings)
- const [tradeDraft,setTradeDraft]=useState<TradeDraft|null>(null)
- const [session,setSession]=useState<Session|null>(null);const [authReady,setAuthReady]=useState(false);const [liveCards,setLiveCards]=useState<Card[]>([]);const [liveTotal,setLiveTotal]=useState(0);const [cardsReady,setCardsReady]=useState(false);const [apiError,setApiError]=useState('')
- useEffect(()=>{saveSettings(settings);document.documentElement.dataset.theme=settings.theme;document.documentElement.style.setProperty('--accent',settings.accent)},[settings])
- useEffect(()=>{supabase.auth.getSession().then(({data})=>{setSession(data.session);setAuthReady(true)});const {data}=supabase.auth.onAuthStateChange((_event,next)=>{setSession(next);setAuthReady(true)});return()=>data.subscription.unsubscribe()},[])
- useEffect(()=>{const syncRoute=()=>setPage(pageFromHash());window.addEventListener('hashchange',syncRoute);return()=>window.removeEventListener('hashchange',syncRoute)},[])
- useEffect(()=>{if(session&&!pageRoutes[window.location.hash.replace(/^#\/?/,'')])window.history.replaceState(null,'',`${window.location.pathname}${window.location.search}#/collection`)},[session])
- useEffect(()=>{if(!session)return;setCardsReady(false);localStorage.setItem('wm_account_id',session.user.id);loadCards().then(data=>{setLiveCards(data.cards);setLiveTotal(data.total);setApiError('')}).catch(error=>setApiError(error instanceof Error?error.message:'API inaccessible')).finally(()=>setCardsReady(true))},[session])
- if(!authReady)return <main className="auth-loading">Connexion à WikiMasters…</main>
- if(!session&&API_MODE==='live')return <LoginScreen/>
- if(session&&API_MODE==='live'&&!cardsReady)return <main className="auth-loading"><div className="loader-ring"/><span>Chargement des cartes…</span></main>
- const catalog=API_MODE==='live'?liveCards:seedCards;const ownerId=session?.user.id??'demo:RoseLaQueen';const username=(session?.user.user_metadata?.username as string|undefined)??session?.user.email?.split('@')[0]??'RoseLaQueen'
- const navigate=(next:Page)=>{setPage(next);setMobile(false);window.location.hash=`/${routeForPage[next]}`}
- const openTrade=(draft:TradeDraft)=>{setTradeDraft(draft);navigate('trades')}
- return <div className={`app density-${settings.density}`}>
-  <aside className={mobile?'open':''}><button className="brand" onClick={()=>navigate('collection')}><span>W</span>WikiMasters<em>+</em></button><nav>{nav.map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id)}><n.icon size={19}/><span>{n.label}</span>{n.id==='messages'?<b>2</b>:null}</button>)}</nav><div className="side-foot"><span className={`mode-dot ${API_MODE}`}/><div><strong>{API_MODE==='live'?'API connectée':'Mode démo sécurisé'}</strong><small>{API_MODE==='live'?'Données WikiMasters':'Aucune écriture distante'}</small></div></div></aside>
-  <div className="shell"><header><button className="mobile-menu" aria-label={mobile?'Fermer le menu':'Ouvrir le menu'} onClick={()=>setMobile(v=>!v)}><Menu/></button><div className="crumb">Bibliothèque <ChevronRight size={14}/> <strong>{nav.find(n=>n.id===page)?.label}</strong>{apiError?<span className="api-warning">{apiError}</span>:null}</div><div className="utilities"><button className="avatar">{username.slice(0,2).toUpperCase()}</button><span className="username">{username}</span><button className="logout" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></header><main>{renderPage(page,settings,setSettings,catalog,liveTotal,ownerId,username,openTrade,tradeDraft,()=>setTradeDraft(null))}</main></div>
- </div>
+const pageRoutes: Record<string, Page> = {
+  collection: 'collection',
+  wishlists: 'wishlists',
+  cards: 'cards',
+  trades: 'trades',
 }
 
-function renderPage(page:Page,settings:Settings,setSettings:(s:Settings)=>void,cards:Card[],total:number,ownerId:string,username:string,onTrade:(draft:TradeDraft)=>void,tradeDraft:TradeDraft|null,onDraftConsumed:()=>void){
- if(page==='cards'||page==='collection') return <CardsPage collectionOnly={page==='collection'} cards={cards} total={total} ownerId={ownerId} onTrade={onTrade}/>
- if(page==='wishlists') return <WishlistsPage ownerId={ownerId} username={username} cards={cards} onTrade={onTrade}/>
- if(page==='trades') return <TradesPage currentUserId={ownerId} initialDraft={tradeDraft} onDraftConsumed={onDraftConsumed}/>
- if(page==='profile') return <ProfilePage settings={settings} setSettings={setSettings}/>
- if(page==='settings') return <SettingsPage settings={settings} setSettings={setSettings}/>
- if(page==='friends') return <FriendsPage/>
- if(page==='packs') return <PacksPage/>
- return <SimplePage page={page}/>
+const pageFromHash = (): Page =>
+  pageRoutes[window.location.hash.replace(/^#\/?/, '')] ?? 'collection'
+
+export default function App() {
+  const [page, setPage] = useState<Page>(pageFromHash)
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false)
+  const [settings] = useState<Settings>(loadSettings)
+  const [session, setSession] = useState<Session | null>(null)
+  const [authReady, setAuthReady] = useState(false)
+  const [initialCards, setInitialCards] = useState<Card[]>([])
+  const [initialTotal, setInitialTotal] = useState(0)
+  const [cardsReady, setCardsReady] = useState(false)
+  const [apiError, setApiError] = useState('')
+  const [tradeDraft, setTradeDraft] = useState<TradeDraft | null>(null)
+
+  useEffect(() => {
+    saveSettings(settings)
+    document.documentElement.dataset.theme = settings.theme
+    document.documentElement.style.setProperty('--accent', settings.accent)
+  }, [settings])
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      setAuthReady(true)
+    })
+
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setAuthReady(true)
+    })
+
+    return () => data.subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    const syncRoute = () => setPage(pageFromHash())
+    window.addEventListener('hashchange', syncRoute)
+    return () => window.removeEventListener('hashchange', syncRoute)
+  }, [])
+
+  useEffect(() => {
+    const route = window.location.hash.replace(/^#\/?/, '')
+    if (session && !pageRoutes[route]) {
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}#/collection`,
+      )
+    }
+  }, [session])
+
+  useEffect(() => {
+    if (!session) {
+      setCardsReady(false)
+      setInitialCards([])
+      setInitialTotal(0)
+      return
+    }
+
+    let active = true
+    setCardsReady(false)
+    localStorage.setItem('wm_account_id', session.user.id)
+
+    loadCards()
+      .then((data) => {
+        if (!active) return
+        setInitialCards(data.cards)
+        setInitialTotal(data.total)
+        setApiError('')
+      })
+      .catch((error: unknown) => {
+        if (!active) return
+        setApiError(error instanceof Error ? error.message : 'API inaccessible')
+      })
+      .finally(() => {
+        if (active) setCardsReady(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [session])
+
+  if (!authReady) {
+    return <main className="auth-loading">Connexion à WikiMasters…</main>
+  }
+
+  if (!session) {
+    return <LoginPage />
+  }
+
+  if (!cardsReady) {
+    return (
+      <main className="auth-loading">
+        <div className="loader-ring" />
+        <span>Chargement des cartes…</span>
+      </main>
+    )
+  }
+
+  const ownerId = session.user.id
+  const username =
+    (session.user.user_metadata.username as string | undefined) ??
+    session.user.email?.split('@')[0] ??
+    'Utilisateur'
+
+  const navigate = (nextPage: Page) => {
+    setPage(nextPage)
+    setMobileNavigationOpen(false)
+    window.location.hash = `/${nextPage}`
+  }
+
+  const openTrade = (draft: TradeDraft) => {
+    setTradeDraft(draft)
+    navigate('trades')
+  }
+
+  const content = (() => {
+    if (page === 'collection' || page === 'cards') {
+      return (
+        <CardsPage
+          collectionOnly={page === 'collection'}
+          initialCards={initialCards}
+          initialTotal={initialTotal}
+          ownerId={ownerId}
+          onTrade={openTrade}
+        />
+      )
+    }
+
+    if (page === 'wishlists') {
+      return (
+        <WishlistsPage
+          ownerId={ownerId}
+          username={username}
+          cards={initialCards}
+          onTrade={openTrade}
+        />
+      )
+    }
+
+    return (
+      <TradesPage
+        currentUserId={ownerId}
+        initialDraft={tradeDraft}
+        onDraftConsumed={() => setTradeDraft(null)}
+      />
+    )
+  })()
+
+  return (
+    <div className={`density-${settings.density}`}>
+      <AppShell
+        page={page}
+        username={username}
+        apiError={apiError}
+        mobileNavigationOpen={mobileNavigationOpen}
+        onToggleMobileNavigation={() => setMobileNavigationOpen((open) => !open)}
+        onNavigate={navigate}
+        onLogout={() => supabase.auth.signOut()}
+      >
+        {content}
+      </AppShell>
+    </div>
+  )
 }
-
-function CardsPage({collectionOnly,cards,total,ownerId,onTrade}:{collectionOnly:boolean;cards:Card[];total:number;ownerId:string;onTrade:(draft:TradeDraft)=>void}){
- const [query,setQuery]=useState('');const [debouncedQuery,setDebouncedQuery]=useState('');const [rarity,setRarity]=useState<Rarity|undefined>();const [sort,setSort]=useState('rarity');const [page,setPage]=useState(0);const [result,setResult]=useState(cards);const [resultTotal,setResultTotal]=useState(total);const [loading,setLoading]=useState(false);const [loadError,setLoadError]=useState('');const [ownership,setOwnership]=useState<'all'|'wanted'>('all');const [wishlistCards,setWishlistCards]=useState<Card[]>([]);const [contactsOnly,setContactsOnly]=useState(false);const [selected,setSelected]=useState<Card|null>(null);const [list,setList]=useState(false);const [wanted,setWanted]=useState(new Set(cards.filter(c=>c.wanted).map(c=>c.id)));const [filtersOpen,setFiltersOpen]=useState(false)
- const wishlistEligible=useMemo(()=>collectionOnly?wishlistCards.filter(card=>card.owned>0):wishlistCards,[collectionOnly,wishlistCards])
- useEffect(()=>{let active=true;getWishlists(ownerId).then(lists=>[...new Set(lists.flatMap(list=>list.cardIds))]).then(ids=>Promise.all(ids.map(loadWishlistCard))).then(resolved=>{if(!active)return;setWishlistCards(resolved);setWanted(new Set(resolved.map(card=>card.id)))}).catch(()=>{});return()=>{active=false}},[ownerId])
- useEffect(()=>{const timer=setTimeout(()=>setDebouncedQuery(query.trim()),600);return()=>clearTimeout(timer)},[query])
- useEffect(()=>{setPage(0)},[debouncedQuery,rarity,sort,collectionOnly])
- useEffect(()=>{if(ownership==='wanted'){setLoading(false);return}let active=true;setLoading(true);const request=collectionOnly?queryCollection({page,query:debouncedQuery,rarity,sort}):queryGlobalCards({page,query:debouncedQuery,rarity,sort});request.then(data=>{if(!active)return;setResult(data.cards);setResultTotal(data.total);setWanted(previous=>new Set([...previous,...data.cards.filter(card=>card.wanted).map(card=>card.id)]));setLoadError('')}).catch(error=>{if(active)setLoadError(error instanceof Error?error.message:'Recherche impossible')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[collectionOnly,page,debouncedQuery,rarity,sort,ownership])
- const filtered=useMemo(()=>{const source=ownership==='wanted'?wishlistEligible:result;const text=debouncedQuery.toLocaleLowerCase('fr');return source.filter(card=>(ownership!=='wanted'||(!text||`${card.title} ${card.description} ${card.category}`.toLocaleLowerCase('fr').includes(text)))&&(ownership!=='wanted'||!rarity||card.rarity===rarity)&&(!contactsOnly||card.contacts.length>0))},[result,wishlistEligible,ownership,debouncedQuery,rarity,contactsOnly])
- const toggleRarity=(next:Rarity)=>setRarity(current=>current===next?undefined:next)
- return <div className="cards-page"><section className="catalog">
-  <div className="title-row"><div><h1>{collectionOnly?'Ma collection':'Toutes les cartes'}</h1><p>{collectionOnly?'Recherche et filtres appliqués à votre collection réelle.':'Recherche et filtres appliqués au catalogue global.'}</p></div><strong className="count">{(ownership==='wanted'?filtered.length:resultTotal).toLocaleString('fr-FR')} <small>résultats</small></strong></div>
-  <div className="search-row"><label className="search"><Search size={20}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Rechercher un article, une catégorie…"/>{loading?<small>Recherche…</small>:query?<button onClick={()=>setQuery('')}><X size={16}/></button>:null}</label><button className="filter-button" onClick={()=>setFiltersOpen(value=>!value)}><SlidersHorizontal size={18}/>Filtres</button><div className="view-toggle"><button className={!list?'selected':''} onClick={()=>setList(false)} aria-label="Vue grille"><LayoutGrid size={18}/></button><button className={list?'selected':''} onClick={()=>setList(true)} aria-label="Vue liste"><List size={18}/></button></div><select aria-label="Trier" value={sort} onChange={event=>setSort(event.target.value)}><option value="rarity">Rareté</option><option value="atk">Attaque</option><option value="def">Défense</option><option value="alpha">Alphabétique</option></select></div>
-  <div className={`filters ${filtersOpen?'shown':''}`}><fieldset><legend>Rareté</legend>{(['L','UR','SR','R','PC','C'] as Rarity[]).map(value=><button key={value} data-rarity={value} className={rarity===value?'on':''} onClick={()=>toggleRarity(value)}>{value}</button>)}</fieldset><fieldset><legend>Listes</legend><button className={ownership==='all'?'on':''} onClick={()=>setOwnership('all')}>Toutes</button><button className={ownership==='wanted'?'on':''} onClick={()=>{setOwnership('wanted');setPage(0)}}>Souhaitées ({wishlistEligible.length})</button></fieldset>{!collectionOnly?<fieldset className="contact-filter"><legend>Contacts</legend><button className={contactsOnly?'switch on':'switch'} onClick={()=>setContactsOnly(value=>!value)}><span/><b>Possédées par mes contacts</b></button></fieldset>:null}</div>
-  {(rarity||ownership!=='all'||(!collectionOnly&&contactsOnly))?<div className="active-filters"><span>Filtres actifs</span>{rarity?<button onClick={()=>setRarity(undefined)}>Rareté : {rarity} <X size={13}/></button>:null}{ownership==='wanted'?<button onClick={()=>setOwnership('all')}>Toutes mes listes de souhaits <X size={13}/></button>:null}{!collectionOnly&&contactsOnly?<button onClick={()=>setContactsOnly(false)}>Contacts seulement <X size={13}/></button>:null}</div>:null}
-  {loadError?<div className="api-error">{loadError}</div>:null}{filtered.length?<div className={list?'card-list':'card-grid'}>{filtered.map(card=><CardItem key={card.id} card={card} wanted={wanted.has(card.id)} onClick={()=>setSelected(card)} onExchange={contact=>onTrade({contact,requestedCards:[card]})} onWant={()=>setWanted(previous=>{const next=new Set(previous);next.has(card.id)?next.delete(card.id):next.add(card.id);return next})}/>)}</div>:!loading?<div className="empty"><Search/><h2>Aucune carte trouvée</h2><p>Modifiez la recherche ou les filtres.</p></div>:null}{ownership==='all'?<div className="pagination"><button disabled={page===0||loading} onClick={()=>setPage(value=>Math.max(0,value-1))}>← Précédent</button><span>Page {page+1}</span><button disabled={loading||(page+1)*50>=resultTotal} onClick={()=>setPage(value=>value+1)}>Suivant →</button></div>:null}
- </section>{selected?<CardDetailModal card={selected} wanted={wanted.has(selected.id)} onClose={()=>setSelected(null)} onWant={()=>setWanted(prev=>{const n=new Set(prev);n.has(selected.id)?n.delete(selected.id):n.add(selected.id);return n})} onExchange={contact=>onTrade({contact,requestedCards:[selected]})}/>:null}</div>
-}
-
-function ProfilePage({settings,setSettings}:{settings:Settings;setSettings:(s:Settings)=>void}){return <div className="profile-page"><div className={`profile-preview banner-${settings.banner}`}><div className="cover"/><div className="profile-identity"><div className="big-avatar">RL</div><div><h1>RoseLaQueen</h1><p>46 724 cartes · Membre depuis 2026</p></div></div><div className="profile-tags"><span>🎤 Kpop ×77</span><span>🗺 Japon ×37</span><span>🎨 Art ×26</span><span>🏎 F1 ×12</span></div><div className="profile-stats"><div><b>46 724</b><span>Cartes uniques</span></div><div><b>1 284</b><span>Échanges</span></div><div><b>392</b><span>Souhaits</span></div></div></div><section className="customizer"><div><Palette/><h2>Personnaliser mon profil</h2><p>Ces choix restent dans ce navigateur et n’écrivent rien sur le site officiel.</p></div><label>Bannière<select value={settings.banner} onChange={e=>setSettings({...settings,banner:e.target.value})}><option value="atlas">Atlas ancien</option><option value="ocean">Océan</option><option value="forest">Forêt</option></select></label><label>Couleur d’accent<div className="swatches">{['#7667e8','#1357df','#7c3aed','#c24164','#057a72','#c56b13'].map(c=><button key={c} aria-label={c} className={settings.accent===c?'chosen':''} style={{background:c}} onClick={()=>setSettings({...settings,accent:c})}/>)}</div></label><label>Style des cartes<div className="segmented"><button className={settings.cardStyle==='editorial'?'on':''} onClick={()=>setSettings({...settings,cardStyle:'editorial'})}>Éditorial</button><button className={settings.cardStyle==='classic'?'on':''} onClick={()=>setSettings({...settings,cardStyle:'classic'})}>Classique</button></div></label></section></div>}
-
-function SettingsPage({settings,setSettings}:{settings:Settings;setSettings:(s:Settings)=>void}){return <div className="settings-page"><div className="page-heading"><h1>Paramètres</h1><p>Une interface à votre rythme, enregistrée localement.</p></div><section><h2>Apparence</h2><SettingRow icon={settings.theme==='light'?Sun:Moon} title="Thème" text="Choisissez le contraste qui vous convient."><div className="segmented"><button className={settings.theme==='light'?'on':''} onClick={()=>setSettings({...settings,theme:'light'})}>Clair</button><button className={settings.theme==='dark'?'on':''} onClick={()=>setSettings({...settings,theme:'dark'})}>Sombre</button></div></SettingRow><SettingRow icon={List} title="Densité" text="Affichez davantage de cartes sur les petits écrans."><div className="segmented"><button className={settings.density==='comfortable'?'on':''} onClick={()=>setSettings({...settings,density:'comfortable'})}>Confortable</button><button className={settings.density==='compact'?'on':''} onClick={()=>setSettings({...settings,density:'compact'})}>Compacte</button></div></SettingRow></section><section><h2>Données et confidentialité</h2><SettingRow icon={BookOpen} title="Mode API" text={API_MODE==='demo'?'Démo locale : aucune requête d’écriture vers WikiMasters.':'API live activée par configuration.'}><span className={`status ${API_MODE}`}><Check size={15}/>{API_MODE==='demo'?'Sûr par défaut':'Connecté'}</span></SettingRow><button className="reset" onClick={()=>setSettings(defaults)}>Réinitialiser mes préférences locales</button></section></div>}
-function SettingRow({icon:Icon,title,text,children}:{icon:typeof Box;title:string;text:string;children:React.ReactNode}){return <div className="setting-row"><Icon/><div><h3>{title}</h3><p>{text}</p></div>{children}</div>}
-
-function FriendsPage(){return <div className="friends-page"><div className="page-heading"><h1>Amis</h1><p>Comparez vos collections avant de proposer un échange.</p></div><label className="search"><Search size={19}/><input placeholder="Rechercher un contact…"/></label><div className="friend-list">{contacts.map(c=><article key={c.name}><div className="friend-avatar">{c.initials}<i className={c.online?'online':''}/></div><div><h2>{c.name}</h2><p>{c.count.toLocaleString('fr-FR')} cartes · {c.online?'En ligne':'Hors ligne'}</p></div><span>{Math.floor(c.count/9)} cartes de vos souhaits</span><button><ArrowLeftRight size={17}/>Comparer</button></article>)}</div></div>}
-
-function PacksPage(){return <div className="packs-page"><div className="pack-visual"><div className="pack-mark"><span>W</span><small>WIKIMASTERS</small></div></div><div className="pack-copy"><h1>Votre prochain paquet vous attend.</h1><p>Cinq articles Wikipédia, tirés au hasard. Le paquet suivant sera disponible dans quelques instants.</p><button className="primary"><PackageOpen/>Ouvrir un paquet</button><div className="pack-progress"><span><b>10</b> / 10 paquets disponibles</span><div><i/></div></div></div></div>}
-
-function SimplePage({page}:{page:Page}){const map={trades:['Échanges','Gérez vos propositions reçues et envoyées.'],market:['Marché','Suivez les enchères sans perdre le fil.'],messages:['Messages','Retrouvez vos conversations avec vos contacts.']} as const;const [title,desc]=map[page as keyof typeof map]??['Bientôt disponible','Cette section arrive dans la prochaine itération.'];return <div className="simple-page"><div className="page-heading"><h1>{title}</h1><p>{desc}</p></div><div className="simple-tabs"><button className="on">En cours</button><button>Historique</button></div><div className="simple-empty">{page==='messages'?<Mail/>:<ArrowLeftRight/>}<h2>Tout est calme pour le moment</h2><p>Les éléments synchronisés apparaîtront ici lorsque le mode API sera activé.</p></div></div>}

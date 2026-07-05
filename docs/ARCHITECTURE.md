@@ -1,35 +1,47 @@
 # Architecture
 
+## Organisation du front
+
+```text
+src/
+├── components/
+│   ├── cards/       Composants visuels partagés par les catalogues et wishlists
+│   ├── layout/      Navigation et structure générale de l’application
+│   └── trades/      Compositeur d’échange
+├── pages/           Un composant par route active
+├── App.tsx          Authentification, routage et composition des pages
+├── *Api.ts          Adaptateurs de l’API WikiMasters
+└── wishlistDb.ts    Persistance des wishlists et formats de partage
+```
+
+Les seules routes actives sont `collection`, `cards`, `wishlists` et `trades`. Le dépôt
+ne contient plus d’écran métier fictif ni de jeu de données de démonstration.
+
 ## Choix techniques
 
-- **Vite + React + TypeScript** : application statique rapide, adaptée à un usage local et à un hébergement GitHub Pages.
-- **CSS natif** : pas de framework de styles ni de runtime supplémentaire.
-- **État local React** pour les filtres et interactions éphémères.
-- **localStorage versionné** uniquement pour les préférences non sensibles.
-- **IndexedDB** pour les listes de souhaits, partitionnées par identifiant de compte.
-- **Authentification Supabase SSR côté navigateur** : elle reproduit le stockage cookie utilisé par le site officiel.
-- **Adaptateur API isolé** dans `src/api.ts`. Le mode connecté est la valeur par défaut, avec repli `VITE_API_MODE=demo`.
+- Vite, React et TypeScript pour l’application GitHub Pages.
+- CSS natif pour conserver un contrôle précis sur le rendu des cartes.
+- Supabase Auth pour la session WikiMasters.
+- Une Edge Function Supabase comme proxy restreint et backend des wishlists.
+- `localStorage` uniquement pour les préférences d’affichage non sensibles.
+- IndexedDB comme repli local lorsque le backend de wishlist n’est pas configuré.
 
-## Sécurité fonctionnelle
+## Flux de données
 
-Le projet ne réalise ni scan, ni fuzzing, ni tentative de contournement. L'exploration documentée dans `API.md` provient uniquement des requêtes normales émises par le site après une connexion utilisateur. L'intégration actuelle est en lecture seule ; les opérations mutantes ne sont pas branchées.
+`App.tsx` charge la session et les premières données nécessaires, puis transmet des
+propriétés typées aux pages. Chaque page réalise ses propres requêtes paginées via les
+adaptateurs API. Les composants visuels n’effectuent aucune requête réseau.
 
-Avant une connexion réelle :
+Les recherches sont temporisées et les requêtes indépendantes sont lancées en parallèle.
+Les cartes de wishlists sont mises en cache pour éviter les appels répétés.
 
-1. confirmer les conditions d'utilisation et l'autorisation de réutilisation du service ;
-2. définir une authentification officielle ou un proxy local explicite ;
-3. protéger les jetons en mémoire, jamais dans le dépôt ;
-4. ajouter une confirmation pour chaque action mutante ;
-5. limiter les appels, annuler les recherches obsolètes et respecter les réponses `429`.
+## Sécurité
 
-## Prochaines étapes proposées
+Le proxy n’autorise que les routes nécessaires. Les mutations d’échange demandent une
+confirmation dans l’interface. Les wishlists dynamiques sont résolues côté serveur et
+restent en lecture seule pour les utilisateurs qui les suivent.
 
-1. Import en lecture seule de la collection et des contacts.
-2. Index local (Web Worker + IndexedDB) pour plusieurs dizaines de milliers de cartes.
-3. Vue « mes souhaits chez mes contacts » classée par proximité d'échange.
-4. Constructeur d'échange avec équilibre par rareté et détection des doublons.
-5. Historique local des prix et alertes de marché sans polling agressif.
+## Formats de partage
 
-## Format de partage des souhaits
-
-Le format `WML1.<base64url>` encode un JSON minimal `{ v, n, c }` : version, nom de liste et identifiants de cartes. Il ne contient ni identifiant de compte, ni nom de contact, ni jeton. L’import crée toujours une nouvelle liste indépendante afin de ne pas écraser une liste existante.
+- `WML1` contient une copie indépendante du nom et des identifiants de cartes.
+- `WMD1` contient une référence vers une wishlist source et reste synchronisé avec elle.

@@ -14,19 +14,19 @@ Les clés publiques présentes dans le JavaScript client ne doivent pas être co
 
 ## Routes de lecture observées dans le périmètre
 
-| Méthode | Route | Usage observé |
-|---|---|---|
-| GET | `/api/notifications` | Notifications du compte |
-| GET | `/api/packs/pro-daily` | État du paquet PRO quotidien |
-| GET | `/api/my-collection/stats?sort=rarity` | Statistiques de collection |
-| GET | `/api/my-collection?sort=rarity&page=0&stats=0` | Collection paginée |
-| GET | `/api/owned-card-ids` | Identifiants des cartes possédées |
-| GET | `/api/trades` | Offres d'échange |
-| GET | `/api/trades?active=1` | Échanges actifs |
-| GET | `/api/marketplace?page=1&limit=50&sort=ending_soon` | Lots du marché, paginés |
-| GET | `/api/marketplace/mine` | Ventes/enchères du compte |
-| GET | `/api/contest` | Concours courant (hors périmètre UI) |
-| GET | `/api/leaderboard?period=daily&tz=Europe/Paris&page=1` | Classement (hors périmètre UI) |
+| Méthode | Route                                                  | Usage observé                        |
+| ------- | ------------------------------------------------------ | ------------------------------------ |
+| GET     | `/api/notifications`                                   | Notifications du compte              |
+| GET     | `/api/packs/pro-daily`                                 | État du paquet PRO quotidien         |
+| GET     | `/api/my-collection/stats?sort=rarity`                 | Statistiques de collection           |
+| GET     | `/api/my-collection?sort=rarity&page=0&stats=0`        | Collection paginée                   |
+| GET     | `/api/owned-card-ids`                                  | Identifiants des cartes possédées    |
+| GET     | `/api/trades`                                          | Offres d'échange                     |
+| GET     | `/api/trades?active=1`                                 | Échanges actifs                      |
+| GET     | `/api/marketplace?page=1&limit=50&sort=ending_soon`    | Lots du marché, paginés              |
+| GET     | `/api/marketplace/mine`                                | Ventes/enchères du compte            |
+| GET     | `/api/contest`                                         | Concours courant (hors périmètre UI) |
+| GET     | `/api/leaderboard?period=daily&tz=Europe/Paris&page=1` | Classement (hors périmètre UI)       |
 
 ## Requêtes Supabase observées
 
@@ -72,29 +72,27 @@ Le projet utilise un proxy Vite local et une authentification Supabase normale. 
 - `GET /api/cards?page=<n>&q=<recherche>&rarity=<L|UR|SR|R|PC|C>&sort=<tri>` alimente la pagination et les filtres de « Toutes les cartes ».
 - `GET /api/my-collection?sort=<tri>&q=<recherche>&rarity=<rareté>&page=<n>&stats=0` alimente la Collection.
 - `GET /api/cards/<id>` résout les cartes d'une liste importée ou enregistrée qui ne figurent pas dans la première page.
-- Le mode connecté est la valeur par défaut. `VITE_API_MODE=demo` coupe les appels distants.
+- L’application fonctionne uniquement avec les données réelles du compte connecté.
 - Les mutations de paquet, enchère et profil restent volontairement non connectées. Les échanges sont activés avec confirmation explicite et un proxy limité aux seules routes documentées ci-dessous.
 
 ## Module d’échange observé et intégré
 
-| Méthode | Route | Contrat observé |
-|---|---|---|
-| GET | `/api/friends` | Retourne `friendships[]`, avec `requester`, `addressee` et leur identifiant de profil. |
-| GET | `/api/trades` | Retourne `{ trades: Trade[] }`. |
-| GET | `/api/trades?active=1` | Échanges actifs, notamment pour repérer les cartes déjà engagées. |
-| GET | `/api/owned-card-ids?username=<nom>` | Identifiants possédés par un contact. |
-| GET | `/api/profile/<nom>/collection?page=0&sort=rarity&stats=1&pending=1` | Collection paginée d’un contact, utilisable dans le compositeur. |
-| POST | `/api/trades` | Crée une offre après confirmation explicite. |
-| PATCH | `/api/trades/<id>` | Met à jour l’offre avec `{ action: "accept" | "decline" | "cancel" }`. |
+| Méthode | Route                                                                | Contrat observé                                                                        |
+| ------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| GET     | `/api/friends`                                                       | Retourne `friendships[]`, avec `requester`, `addressee` et leur identifiant de profil. |
+| GET     | `/api/trades`                                                        | Retourne `{ trades: Trade[] }`.                                                        |
+| GET     | `/api/trades?active=1`                                               | Échanges actifs, notamment pour repérer les cartes déjà engagées.                      |
+| GET     | `/api/owned-card-ids?username=<nom>`                                 | Identifiants possédés par un contact.                                                  |
+| GET     | `/api/profile/<nom>/collection?page=0&sort=rarity&stats=1&pending=1` | Collection paginée d’un contact, utilisable dans le compositeur.                       |
+| POST    | `/api/trades`                                                        | Crée une offre après confirmation explicite.                                           |
+| PATCH   | `/api/trades/<id>`                                                   | Met à jour l’offre avec `{ action: "accept"                                            | "decline" | "cancel" }`. |
 
 Corps observé pour la création :
 
 ```json
 {
   "recipient_id": "uuid-du-contact",
-  "items": [
-    { "card_id": "uuid-carte", "offered_by": "uuid-du-propriétaire" }
-  ],
+  "items": [{ "card_id": "uuid-carte", "offered_by": "uuid-du-propriétaire" }],
   "initiator_wikibidous": 0,
   "recipient_wikibidous": 0
 }

@@ -1,6 +1,7 @@
 # WikiMasters+
 
-Un front alternatif, local-first et non intrusif pour WikiMasters. Cette version privilégie la recherche, les filtres combinables, les souhaits, la comparaison avec les contacts et la personnalisation du profil.
+Front alternatif pour WikiMasters, centré sur la collection, la recherche, les listes de
+souhaits et les échanges.
 
 ## Démarrage
 
@@ -9,32 +10,34 @@ pnpm install
 pnpm dev
 ```
 
-L'application démarre en **mode connecté** et affiche un écran de connexion WikiMasters. L'authentification est réalisée directement avec Supabase ; le mot de passe n'est jamais conservé par l'application. Les préférences visuelles sont enregistrées sous la clé versionnée `wikimasters-plus:v1` de `localStorage`.
+L’application utilise une vraie session WikiMasters. Aucun mot de passe n’est enregistré
+par le projet.
 
-## Connexion API
+## Configuration
 
-Le proxy Vite envoie `/wm-api/*` vers `https://www.wiki-masters.com/api/*`. Les cookies de session Supabase créés sur `localhost` sont transmis aux routes métier existantes.
-
-Pour revenir au jeu de données local :
+En production, définir l’URL de la fonction Supabase :
 
 ```bash
-VITE_API_MODE=demo pnpm dev
+VITE_BACKEND_URL=https://PROJECT.supabase.co/functions/v1/wm-backend
 ```
 
-Un déploiement statique devra fournir un proxy ou une réécriture équivalente pour `/wm-api`. Ne jamais stocker de mot de passe dans le dépôt ou dans `localStorage`.
+Le serveur Vite relaie `/wm-api/*` vers les routes officielles pendant le développement.
 
-## Périmètre actuel
+## Commandes
 
-- Bibliothèque « Toutes les cartes » avec recherche différée, raretés, possession, souhaits et filtre contacts.
-- Collection et doublons.
-- Inspecteur de carte, lien Wikipédia et amorce d'échange.
-- Personnalisation du profil inspirée du POC fourni.
-- Listes de souhaits multiples stockées dans IndexedDB par identifiant de compte.
-- Export/import portable au format texte `WML1` sans donnée personnelle.
-- Analyse des cartes possédées par les contacts et message prêt à copier.
-- Amis, Paquets, Échanges, Marché, Messages et Paramètres.
-- Responsive mobile et thème sombre par défaut, proche du site d’origine.
+```bash
+pnpm build
+pnpm format
+pnpm format:check
+pnpm test:e2e
+```
 
-Hors périmètre demandé : Bataille, Succès, Concours, Classement et Guilde.
+## Fonctionnalités actives
 
-Voir [docs/API.md](docs/API.md) et [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- Collection et catalogue global avec recherche, filtres et pagination.
+- Wishlists multiples, partage statique `WML1` et liens dynamiques `WMD1`.
+- Recherche des cartes possédées par les contacts.
+- Création, consultation et gestion des échanges.
+- Interface responsive et thème sombre.
+
+Voir [la cartographie API](docs/API.md) et [l’architecture](docs/ARCHITECTURE.md).
