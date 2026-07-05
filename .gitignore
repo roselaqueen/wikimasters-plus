@@ -1,0 +1,11 @@
+node_modules/
+.idea/
+dist/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+.env
+.env.*
+!.env.example
+playwright-report/
+test-results/

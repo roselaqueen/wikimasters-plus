@@ -1,0 +1,4 @@
+project_id = "syqrpveebxrqrdxznotc"
+
+[functions.wm-backend]
+verify_jwt = false
