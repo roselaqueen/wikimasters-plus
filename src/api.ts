@@ -9,10 +9,11 @@ export async function backendRequest<T>(path:string,init:RequestInit={}):Promise
  if(!response.ok)throw new Error(`Backend ${response.status}`)
  return response.status===204?undefined as T:response.json() as Promise<T>
 }
-export async function apiGet<T>(path:string):Promise<T>{
+export async function apiRequest<T>(path:string,init:RequestInit={}):Promise<T>{
  if(API_MODE!=='live') throw new Error('Le mode API live est désactivé.')
- if(BACKEND_URL)return backendRequest<T>(`/proxy${path}`)
- const response=await fetch(`${import.meta.env.VITE_API_BASE??'/wm-api'}${path}`,{credentials:'include',headers:{Accept:'application/json'}})
+ if(BACKEND_URL)return backendRequest<T>(`/proxy${path}`,init)
+ const response=await fetch(`${import.meta.env.VITE_API_BASE??'/wm-api'}${path}`,{...init,credentials:'include',headers:{Accept:'application/json',...(init.body?{'Content-Type':'application/json'}:{}),...init.headers}})
  if(!response.ok) throw new Error(`API ${response.status}`)
- return response.json() as Promise<T>
+ return response.status===204?undefined as T:response.json() as Promise<T>
 }
+export const apiGet=<T>(path:string)=>apiRequest<T>(path)

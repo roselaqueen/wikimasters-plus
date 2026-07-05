@@ -45,12 +45,20 @@ export async function searchCards(query:string,rarity?:Rarity):Promise<Card[]>{
  return (await queryGlobalCards({query,rarity})).cards
 }
 
-function mapCollectionItem(value:unknown):Card|null{
+export function mapCollectionItem(value:unknown):Card|null{
  if(!value||typeof value!=='object')return null
  const row=value as Record<string,unknown>;const raw=(row.card&&typeof row.card==='object'?row.card:row) as Partial<ApiCard>&Record<string,unknown>
  if(typeof raw.id!=='string'||typeof raw.wikipedia_title!=='string')return null
  const quantity=Number(row.quantity??row.count??row.qty??1)
  return{id:raw.id,title:raw.wikipedia_title,description:raw.summary??raw.category??'Article Wikipédia',image:raw.image_url??noImagePath,rarity:(raw.rarity??'C') as Rarity,atk:Number(raw.atk??0),def:Number(raw.def??0),owned:Number.isFinite(quantity)?quantity:1,wanted:false,contacts:[],category:raw.category??'Wikipédia'}
+}
+
+export async function queryFriendCollection(username:string,{page=0,query='',rarity,sort='rarity'}:CardQuery={}):Promise<{cards:Card[];total:number}>{
+ const params=new URLSearchParams({page:String(page),sort,stats:page===0?'1':'0',pending:'1'})
+ if(query.trim())params.set('q',query.trim())
+ if(rarity)params.set('rarity',rarity)
+ const data=await apiGet<CollectionResponse>(`/profile/${encodeURIComponent(username)}/collection?${params}`)
+ return{cards:data.collection.map(mapCollectionItem).filter((card):card is Card=>Boolean(card)),total:typeof data.total==='number'?data.total:0}
 }
 
 export async function queryCollection({page=0,query='',rarity,sort='rarity'}:CardQuery):Promise<{cards:Card[];total:number}>{

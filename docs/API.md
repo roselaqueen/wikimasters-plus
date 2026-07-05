@@ -73,4 +73,31 @@ Le projet utilise un proxy Vite local et une authentification Supabase normale. 
 - `GET /api/my-collection?sort=<tri>&q=<recherche>&rarity=<rareté>&page=<n>&stats=0` alimente la Collection.
 - `GET /api/cards/<id>` résout les cartes d'une liste importée ou enregistrée qui ne figurent pas dans la première page.
 - Le mode connecté est la valeur par défaut. `VITE_API_MODE=demo` coupe les appels distants.
-- Les mutations (paquet, enchère, échange, modification de profil) restent volontairement non connectées jusqu'à validation individuelle de leur contrat.
+- Les mutations de paquet, enchère et profil restent volontairement non connectées. Les échanges sont activés avec confirmation explicite et un proxy limité aux seules routes documentées ci-dessous.
+
+## Module d’échange observé et intégré
+
+| Méthode | Route | Contrat observé |
+|---|---|---|
+| GET | `/api/friends` | Retourne `friendships[]`, avec `requester`, `addressee` et leur identifiant de profil. |
+| GET | `/api/trades` | Retourne `{ trades: Trade[] }`. |
+| GET | `/api/trades?active=1` | Échanges actifs, notamment pour repérer les cartes déjà engagées. |
+| GET | `/api/owned-card-ids?username=<nom>` | Identifiants possédés par un contact. |
+| GET | `/api/profile/<nom>/collection?page=0&sort=rarity&stats=1&pending=1` | Collection paginée d’un contact, utilisable dans le compositeur. |
+| POST | `/api/trades` | Crée une offre après confirmation explicite. |
+| PATCH | `/api/trades/<id>` | Met à jour l’offre avec `{ action: "accept" | "decline" | "cancel" }`. |
+
+Corps observé pour la création :
+
+```json
+{
+  "recipient_id": "uuid-du-contact",
+  "items": [
+    { "card_id": "uuid-carte", "offered_by": "uuid-du-propriétaire" }
+  ],
+  "initiator_wikibidous": 0,
+  "recipient_wikibidous": 0
+}
+```
+
+Contraintes visibles dans le client officiel : au moins une carte ou des wikibidous, 100 cartes maximum au total, et 10 000 wikibidous maximum par joueur. WikiMasters+ demande une seconde confirmation avant le `POST`. Le proxy distant limite volontairement les mutations à `POST /trades` et `PATCH /trades/<id>`.

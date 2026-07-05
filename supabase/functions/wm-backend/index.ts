@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders={
   'Access-Control-Allow-Origin':Deno.env.get('ALLOWED_ORIGIN')??'*',
   'Access-Control-Allow-Headers':'authorization, content-type, x-wm-cookie',
-  'Access-Control-Allow-Methods':'GET, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods':'GET, POST, PATCH, PUT, DELETE, OPTIONS',
   'Content-Type':'application/json',
 }
 const wikiUrl='https://cyrxjeppjqsxxjayfrur.supabase.co'
@@ -24,8 +24,12 @@ Deno.serve(async request=>{
  if(route.startsWith('/proxy/')){
    const cookie=request.headers.get('x-wm-cookie')
    if(!cookie)return json({error:'Missing session cookie'},401)
+   const upstreamPath=route.slice('/proxy'.length)
+   const canWrite=(request.method==='POST'&&upstreamPath==='/trades')||(request.method==='PATCH'&&/^\/trades\/[^/]+$/.test(upstreamPath))
+   if(request.method!=='GET'&&!canWrite)return json({error:'Proxy mutation not allowed'},405)
    const target=`https://www.wiki-masters.com/api${route.slice('/proxy'.length)}${url.search}`
-   const upstream=await fetch(target,{method:'GET',headers:{Accept:'application/json',Cookie:cookie}})
+   const body=request.method==='GET'?undefined:await request.text()
+   const upstream=await fetch(target,{method:request.method,body,headers:{Accept:'application/json','Content-Type':'application/json',Cookie:cookie,'x-wiki-calendar-tz':'Europe/Paris'}})
    return new Response(upstream.body,{status:upstream.status,headers:{...corsHeaders,'Cache-Control':'private, max-age=20'}})
  }
 
