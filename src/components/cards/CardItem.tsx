@@ -1,6 +1,6 @@
 import { ArrowLeftRight, UsersRound } from 'lucide-react'
 import GameCard from './GameCard'
-import type { Card } from '../../types'
+import type { Card } from '../../types/domain'
 
 export default function CardItem({
   card,
@@ -17,7 +17,8 @@ export default function CardItem({
   onExchange?: (contact: string) => void
   removeAction?: boolean
 }) {
-  const [first, ...others] = card.contacts
+  const visibleOwners = card.contacts.slice(0, 2)
+  const otherOwners = card.contacts.slice(2)
   const ownerButton = (contact: string) => (
     <button key={contact} onClick={() => onExchange?.(contact)} disabled={!onExchange}>
       <i>{contact[0]}</i>
@@ -41,13 +42,13 @@ export default function CardItem({
             ? `${card.contacts.length} contact${card.contacts.length > 1 ? 's' : ''} possède${card.contacts.length > 1 ? 'nt' : ''} la carte`
             : 'Aucun contact ne la possède'}
         </strong>
-        {first ? ownerButton(first) : null}
-        {others.length ? (
+        {visibleOwners.map(ownerButton)}
+        {otherOwners.length ? (
           <details>
             <summary>
-              + {others.length} autre{others.length > 1 ? 's' : ''}
+              + {otherOwners.length} autre{otherOwners.length > 1 ? 's' : ''}
             </summary>
-            <div>{others.map(ownerButton)}</div>
+            <div>{otherOwners.map(ownerButton)}</div>
           </details>
         ) : null}
       </div>

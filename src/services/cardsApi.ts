@@ -1,5 +1,5 @@
 import { apiGet } from './api'
-import type { Card, Rarity } from './types'
+import type { Card, Rarity } from '../types/domain'
 
 const noImagePath = `${import.meta.env.BASE_URL}cards/no-image.svg`
 

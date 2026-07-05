@@ -7,7 +7,7 @@ import {
   LayoutGrid,
   Menu,
 } from 'lucide-react'
-import type { Page } from '../../types'
+import type { Page } from '../../types/domain'
 
 type AppShellProps = {
   page: Page

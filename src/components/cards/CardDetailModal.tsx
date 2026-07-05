@@ -1,6 +1,6 @@
 import { ArrowLeftRight, ExternalLink, Heart, Shield, Swords, X } from 'lucide-react'
 import GameCard from './GameCard'
-import type { Card, Rarity } from '../../types'
+import type { Card, Rarity } from '../../types/domain'
 
 const rarityLabels: Record<Rarity, string> = {
   L: 'Légendaire',

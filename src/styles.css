@@ -11,6 +11,29 @@
   --soft: #f3f4f5;
   color-scheme: light;
 }
+
+/* Harmonisation finale des surfaces de page. */
+.trades-page,
+.wishlists-page {
+  width: 100%;
+  max-width: 1220px;
+  margin: auto;
+  padding: 30px;
+}
+
+.trades-heading h1,
+.wishlist-heading h1,
+.title-row h1 {
+  margin: 0 0 8px;
+  font: 700 37px/1 'Source Serif 4';
+}
+
+.trade-list.page-panel {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
 [data-theme='dark'] {
   color-scheme: dark;
   --surface: #242329;
@@ -29,10 +52,10 @@
   background: #18171c;
   border-right: 1px solid #34323a;
 }
-[data-theme='dark'] .app nav button:hover {
+[data-theme='dark'] .app > aside nav button:hover {
   background: #29272f;
 }
-[data-theme='dark'] .app nav button.active {
+[data-theme='dark'] .app > aside nav button.active {
   background: color-mix(in srgb, var(--accent) 24%, #242329);
   box-shadow: inset 3px 0 0 var(--accent);
   color: #fff;
@@ -107,11 +130,11 @@ button {
   color: #5b8dff;
   font-style: normal;
 }
-.app nav {
+.app > aside nav {
   display: grid;
   gap: 5px;
 }
-.app nav button {
+.app > aside nav button {
   height: 42px;
   border: 0;
   border-radius: 8px;
@@ -124,15 +147,15 @@ button {
   text-align: left;
   font-size: 14px;
 }
-.app nav button:hover {
+.app > aside nav button:hover {
   background: #10243b;
   color: white;
 }
-.app nav button.active {
+.app > aside nav button.active {
   background: var(--accent);
   color: white;
 }
-.app nav button b {
+.app > aside nav button b {
   margin-left: auto;
   background: white;
   color: var(--sidebar);
@@ -1302,6 +1325,127 @@ fieldset button[data-rarity='PC'] {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Primitives partagées entre toutes les pages */
+.button,
+.primary,
+.pagination button,
+.trade-list article button,
+.owners-summary button,
+.owner-groups article > button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--surface);
+  color: inherit;
+  font-weight: 600;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.button:hover:not(:disabled),
+.pagination button:hover:not(:disabled),
+.trade-list article button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.button:active:not(:disabled),
+.pagination button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.button:disabled,
+.primary:disabled,
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.primary,
+.button.primary {
+  width: auto;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.loading-state {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.loading-state .loader-ring {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+  flex: none;
+}
+
+button .loading-state {
+  color: inherit;
+}
+
+.page-loading,
+.cards-page > .loading-state,
+.catalog > .loading-state,
+.trade-list > .loading-state {
+  width: 100%;
+  min-height: 120px;
+}
+
+.trades-page,
+.wishlists-page {
+  width: 100%;
+  max-width: 1220px;
+  margin: auto;
+  padding: 30px;
+}
+
+.trades-heading,
+.wishlist-heading,
+.title-row {
+  min-height: 62px;
+  align-items: flex-end;
+}
+
+.trades-heading h1,
+.wishlist-heading h1,
+.title-row h1 {
+  margin: 0 0 8px;
+  font: 700 37px/1 'Source Serif 4';
+}
+
+.trades-heading p,
+.wishlist-heading p,
+.title-row p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.page-panel,
+.wishlist-layout {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.trade-list.page-panel {
+  padding: 14px;
 }
 
 /* Cartes et dialogues alignés sur l'interface WikiMasters officielle */

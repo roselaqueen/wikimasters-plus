@@ -1,5 +1,5 @@
 import { apiGet, apiRequest } from './api'
-import type { Friend, Trade } from './types'
+import type { Friend, Trade } from '../types/domain'
 
 type Friendship = {
   requester_id: string

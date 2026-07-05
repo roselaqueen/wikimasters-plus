@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeftRight, Check, Clock, Plus, X } from 'lucide-react'
-import { getTrades, updateTrade } from '../tradeApi'
-import TradeComposer, { type TradeDraft } from '../components/trades/TradeComposer'
-import type { Trade } from '../types'
+import { updateTrade } from '../services/tradeApi'
+import TradeComposer from '../components/trades/TradeComposer'
+import type { Trade, TradeDraft } from '../types/domain'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
+import { useAsyncAction } from '../hooks/useAsyncAction'
+import { useTrades } from '../hooks/useTrades'
 
 export default function TradesPage({
   currentUserId,
@@ -13,18 +16,11 @@ export default function TradesPage({
   initialDraft?: TradeDraft | null
   onDraftConsumed: () => void
 }) {
-  const [trades, setTrades] = useState<Trade[]>([])
+  const { trades, loading, error, reload } = useTrades()
+  const { run, isPending } = useAsyncAction()
   const [tab, setTab] = useState<'received' | 'sent' | 'history'>('received')
   const [composer, setComposer] = useState(Boolean(initialDraft))
-  const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState('')
-  const load = () => {
-    setLoading(true)
-    getTrades()
-      .then(setTrades)
-      .finally(() => setLoading(false))
-  }
-  useEffect(load, [])
   useEffect(() => {
     if (initialDraft) setComposer(true)
   }, [initialDraft])
@@ -47,9 +43,11 @@ export default function TradesPage({
       )
     )
       return
-    await updateTrade(trade.id, action)
-    setNotice('Échange mis à jour.')
-    load()
+    await run(`trade-${trade.id}`, async () => {
+      await updateTrade(trade.id, action)
+      setNotice('Échange mis à jour.')
+      await reload()
+    })
   }
   return (
     <div className="trades-page">
@@ -58,7 +56,7 @@ export default function TradesPage({
           <h1>Échanges</h1>
           <p>Gérez vos offres d’échange avec vos amis.</p>
         </div>
-        <button className="primary" onClick={() => setComposer(true)}>
+        <button className="button primary" onClick={() => setComposer(true)}>
           <Plus />
           Proposer un échange
         </button>
@@ -80,9 +78,10 @@ export default function TradesPage({
           Historique
         </button>
       </nav>
-      <div className="trade-list">
+      {error ? <div className="api-error">{error}</div> : null}
+      <div className="trade-list page-panel">
         {loading ? (
-          <p>Chargement des échanges…</p>
+          <LoadingSpinner label="Chargement des échanges…" />
         ) : filtered.length ? (
           filtered.map((trade) => {
             const other =
@@ -119,18 +118,37 @@ export default function TradesPage({
                   <div>
                     {trade.recipient_id === currentUserId ? (
                       <>
-                        <button onClick={() => act(trade, 'decline')}>
+                        <button
+                          disabled={isPending(`trade-${trade.id}`)}
+                          onClick={() => act(trade, 'decline')}
+                        >
                           <X />
                           Refuser
                         </button>
-                        <button className="primary" onClick={() => act(trade, 'accept')}>
-                          <Check />
-                          Accepter
+                        <button
+                          className="button primary"
+                          disabled={isPending(`trade-${trade.id}`)}
+                          onClick={() => act(trade, 'accept')}
+                        >
+                          {isPending(`trade-${trade.id}`) ? (
+                            <LoadingSpinner label="Traitement…" />
+                          ) : (
+                            <>
+                              <Check /> Accepter
+                            </>
+                          )}
                         </button>
                       </>
                     ) : (
-                      <button onClick={() => act(trade, 'cancel')}>
-                        Annuler l’offre
+                      <button
+                        disabled={isPending(`trade-${trade.id}`)}
+                        onClick={() => act(trade, 'cancel')}
+                      >
+                        {isPending(`trade-${trade.id}`) ? (
+                          <LoadingSpinner label="Annulation…" />
+                        ) : (
+                          'Annuler l’offre'
+                        )}
                       </button>
                     )}
                   </div>
@@ -172,7 +190,7 @@ export default function TradesPage({
             setComposer(false)
             onDraftConsumed()
             setNotice('Offre envoyée.')
-            load()
+            void reload()
           }}
         />
       ) : null}

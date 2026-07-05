@@ -1,32 +1,22 @@
 import { useEffect, useState } from 'react'
-import type { Session } from '@supabase/supabase-js'
 import AppShell from './components/layout/AppShell'
-import type { TradeDraft } from './components/trades/TradeComposer'
+import LoadingSpinner from './components/ui/LoadingSpinner'
+import { useAuthSession } from './hooks/useAuthSession'
 import CardsPage from './pages/CardsPage'
 import LoginPage from './pages/LoginPage'
 import TradesPage from './pages/TradesPage'
 import WishlistsPage from './pages/WishlistsPage'
-import { supabase } from './auth'
-import { loadCards } from './cardsApi'
-import { loadSettings, saveSettings } from './storage'
-import type { Card, Page, Settings } from './types'
-
-const pageRoutes: Record<string, Page> = {
-  collection: 'collection',
-  wishlists: 'wishlists',
-  cards: 'cards',
-  trades: 'trades',
-}
-
-const pageFromHash = (): Page =>
-  pageRoutes[window.location.hash.replace(/^#\/?/, '')] ?? 'collection'
+import { supabase } from './services/auth'
+import { loadCards } from './services/cardsApi'
+import { loadSettings, saveSettings } from './services/settingsStorage'
+import type { Card, Page, Settings, TradeDraft } from './types/domain'
+import { isPageRoute, pageFromHash } from './utils/routes'
 
 export default function App() {
   const [page, setPage] = useState<Page>(pageFromHash)
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false)
   const [settings] = useState<Settings>(loadSettings)
-  const [session, setSession] = useState<Session | null>(null)
-  const [authReady, setAuthReady] = useState(false)
+  const { session, ready: authReady } = useAuthSession()
   const [initialCards, setInitialCards] = useState<Card[]>([])
   const [initialTotal, setInitialTotal] = useState(0)
   const [cardsReady, setCardsReady] = useState(false)
@@ -40,20 +30,6 @@ export default function App() {
   }, [settings])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setAuthReady(true)
-    })
-
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession)
-      setAuthReady(true)
-    })
-
-    return () => data.subscription.unsubscribe()
-  }, [])
-
-  useEffect(() => {
     const syncRoute = () => setPage(pageFromHash())
     window.addEventListener('hashchange', syncRoute)
     return () => window.removeEventListener('hashchange', syncRoute)
@@ -61,7 +37,7 @@ export default function App() {
 
   useEffect(() => {
     const route = window.location.hash.replace(/^#\/?/, '')
-    if (session && !pageRoutes[route]) {
+    if (session && !isPageRoute(route)) {
       window.history.replaceState(
         null,
         '',
@@ -103,7 +79,11 @@ export default function App() {
   }, [session])
 
   if (!authReady) {
-    return <main className="auth-loading">Connexion à WikiMasters…</main>
+    return (
+      <main className="auth-loading">
+        <LoadingSpinner label="Connexion à WikiMasters…" />
+      </main>
+    )
   }
 
   if (!session) {
@@ -113,8 +93,7 @@ export default function App() {
   if (!cardsReady) {
     return (
       <main className="auth-loading">
-        <div className="loader-ring" />
-        <span>Chargement des cartes…</span>
+        <LoadingSpinner label="Chargement des cartes…" />
       </main>
     )
   }

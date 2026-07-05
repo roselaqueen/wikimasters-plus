@@ -1,5 +1,5 @@
 import { Heart, Shield, Swords, Star, X } from 'lucide-react'
-import type { Card } from '../../types'
+import type { Card } from '../../types/domain'
 
 export default function GameCard({
   card,

@@ -1,4 +1,4 @@
-import type { Settings } from './types'
+import type { Settings } from '../types/domain'
 const KEY = 'wikimasters-plus:v1'
 export const defaults: Settings = {
   theme: 'dark',

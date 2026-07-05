@@ -4,14 +4,13 @@
 
 ```text
 src/
-├── components/
-│   ├── cards/       Composants visuels partagés par les catalogues et wishlists
-│   ├── layout/      Navigation et structure générale de l’application
-│   └── trades/      Compositeur d’échange
+├── components/      Composants visuels classés par domaine, plus les primitives UI
+├── hooks/           Session, debounce, requêtes et actions asynchrones réutilisables
 ├── pages/           Un composant par route active
-├── App.tsx          Authentification, routage et composition des pages
-├── *Api.ts          Adaptateurs de l’API WikiMasters
-└── wishlistDb.ts    Persistance des wishlists et formats de partage
+├── services/        API WikiMasters, Supabase et persistance des wishlists
+├── types/           Modèles de domaine partagés
+├── utils/           Routage et fonctions pures d’encodage ou de transformation
+└── App.tsx          Routage et composition des pages
 ```
 
 Les seules routes actives sont `collection`, `cards`, `wishlists` et `trades`. Le dépôt
@@ -28,9 +27,9 @@ ne contient plus d’écran métier fictif ni de jeu de données de démonstrati
 
 ## Flux de données
 
-`App.tsx` charge la session et les premières données nécessaires, puis transmet des
-propriétés typées aux pages. Chaque page réalise ses propres requêtes paginées via les
-adaptateurs API. Les composants visuels n’effectuent aucune requête réseau.
+`App.tsx` compose les pages et délègue la session et les chargements aux hooks dédiés.
+Les pages réalisent leurs requêtes paginées par l’intermédiaire des services. Les
+composants visuels et les utilitaires n’effectuent aucune requête réseau.
 
 Les recherches sont temporisées et les requêtes indépendantes sont lancées en parallèle.
 Les cartes de wishlists sont mises en cache pour éviter les appels répétés.

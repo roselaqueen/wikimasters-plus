@@ -15,38 +15,19 @@ import {
   Upload,
   UsersRound,
 } from 'lucide-react'
+import { deleteWishlist, getWishlists, putWishlist } from '../services/wishlistRepository'
+import { loadWishlistCard, searchCards } from '../services/cardsApi'
+import type { Card, Rarity, TradeDraft, Wishlist } from '../types/domain'
+import CardItem from '../components/cards/CardItem'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
+import { useAsyncAction } from '../hooks/useAsyncAction'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { formatOwnersText, groupCardsByOwner, makeWishlist } from '../utils/wishlist'
 import {
   decodeWishlist,
-  deleteWishlist,
   encodeDynamicWishlist,
   encodeWishlist,
-  getWishlists,
-  putWishlist,
-} from '../wishlistDb'
-import { loadWishlistCard, searchCards } from '../cardsApi'
-import type { Card, Wishlist } from '../types'
-import type { TradeDraft } from '../components/trades/TradeComposer'
-import CardItem from '../components/cards/CardItem'
-
-const KPOP_OWNER = 'ae78c751-a14d-465c-bf58-6844175c8667'
-const KPOP_IDS = [
-  'eefbc69b-55dc-40ad-9cc4-8bce91199c93',
-  '589bed2b-5705-4496-a1f5-2b35be1b2d83',
-  'a0700743-630b-432a-9b99-0ec93e77bde7',
-]
-const makeList = (
-  ownerId: string,
-  name: string,
-  cardIds: string[] = [],
-  id: string = crypto.randomUUID(),
-): Wishlist => ({
-  id,
-  ownerId,
-  name,
-  cardIds,
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
-})
+} from '../utils/wishlistCodec'
 
 export default function WishlistsPage({
   ownerId,
@@ -60,14 +41,14 @@ export default function WishlistsPage({
   onTrade: (draft: TradeDraft) => void
 }) {
   const [lists, setLists] = useState<Wishlist[]>([])
+  const [listsLoading, setListsLoading] = useState(true)
   const [selectedId, setSelectedId] = useState('')
   const [query, setQuery] = useState('')
+  const debouncedQuery = useDebouncedValue(query.trim(), 700)
   const [searchResults, setSearchResults] = useState<Card[]>([])
   const [resolved, setResolved] = useState<Card[]>(cards)
   const [searching, setSearching] = useState(false)
-  const [searchRarity, setSearchRarity] = useState<
-    import('../types').Rarity | undefined
-  >()
+  const [searchRarity, setSearchRarity] = useState<Rarity>()
   const [share, setShare] = useState('')
   const [dynamicShare, setDynamicShare] = useState(false)
   const [importValue, setImportValue] = useState('')
@@ -75,6 +56,7 @@ export default function WishlistsPage({
   const [tab, setTab] = useState<'cards' | 'share' | 'contacts'>('cards')
   const initializedOwner = useRef('')
   const searchSequence = useRef(0)
+  const { run, isPending } = useAsyncAction()
 
   useEffect(
     () =>
@@ -86,25 +68,23 @@ export default function WishlistsPage({
   useEffect(() => {
     if (initializedOwner.current === ownerId) return
     initializedOwner.current = ownerId
-    getWishlists(ownerId).then(async (found) => {
-      const unique = [
-        ...new Map(
-          found.map((list) => [list.name.trim().toLocaleLowerCase('fr'), list]),
-        ).values(),
-      ]
-      if (ownerId === KPOP_OWNER && !unique.some((list) => list.name === 'Kpop')) {
-        const kpop = makeList(ownerId, 'Kpop', KPOP_IDS, 'kpop')
-        await putWishlist(kpop)
-        unique.unshift(kpop)
-      }
-      if (!unique.length) {
-        const first = makeList(ownerId, 'Mes recherches', [], 'default')
-        await putWishlist(first)
-        unique.push(first)
-      }
-      setLists(unique)
-      setSelectedId(unique[0].id)
-    })
+    setListsLoading(true)
+    getWishlists(ownerId)
+      .then(async (found) => {
+        const unique = [
+          ...new Map(
+            found.map((list) => [list.name.trim().toLocaleLowerCase('fr'), list]),
+          ).values(),
+        ]
+        if (!unique.length) {
+          const first = makeWishlist(ownerId, 'Mes recherches')
+          await putWishlist(first)
+          unique.push(first)
+        }
+        setLists(unique)
+        setSelectedId(unique[0].id)
+      })
+      .finally(() => setListsLoading(false))
   }, [ownerId])
 
   const selected = lists.find((list) => list.id === selectedId) ?? lists[0]
@@ -123,7 +103,7 @@ export default function WishlistsPage({
   )
 
   useEffect(() => {
-    const value = query.trim()
+    const value = debouncedQuery
     const sequence = ++searchSequence.current
     if (value.length < 2) {
       setSearchResults([])
@@ -131,22 +111,17 @@ export default function WishlistsPage({
       return
     }
     setSearching(true)
-    const timer = setTimeout(
-      () =>
-        searchCards(value, searchRarity)
-          .then((results) => {
-            if (sequence === searchSequence.current) setSearchResults(results)
-          })
-          .catch(() => {
-            if (sequence === searchSequence.current) setSearchResults([])
-          })
-          .finally(() => {
-            if (sequence === searchSequence.current) setSearching(false)
-          }),
-      700,
-    )
-    return () => clearTimeout(timer)
-  }, [query, searchRarity])
+    searchCards(value, searchRarity)
+      .then((results) => {
+        if (sequence === searchSequence.current) setSearchResults(results)
+      })
+      .catch(() => {
+        if (sequence === searchSequence.current) setSearchResults([])
+      })
+      .finally(() => {
+        if (sequence === searchSequence.current) setSearching(false)
+      })
+  }, [debouncedQuery, searchRarity])
   useEffect(() => {
     if (!selected) return
     const missing = selected.cardIds.filter(
@@ -170,34 +145,41 @@ export default function WishlistsPage({
     )
     setSelectedId(next.id)
   }
-  const addList = async () => {
-    const next = makeList(ownerId, `Nouvelle liste ${lists.length + 1}`)
-    await putWishlist(next)
-    setLists((prev) => [next, ...prev])
-    setSelectedId(next.id)
-  }
-  const rename = async () => {
+  const addList = () =>
+    run('add-list', async () => {
+      const next = makeWishlist(ownerId, `Nouvelle liste ${lists.length + 1}`)
+      await putWishlist(next)
+      setLists((prev) => [next, ...prev])
+      setSelectedId(next.id)
+    })
+  const rename = () => {
     if (!selected || selected.readOnly) return
     const name = prompt('Nouveau nom de la liste', selected.name)?.trim()
     if (name)
-      await persist({ ...selected, name: name.slice(0, 80), updatedAt: Date.now() })
+      return run('rename-list', () =>
+        persist({ ...selected, name: name.slice(0, 80), updatedAt: Date.now() }),
+      )
   }
-  const removeList = async () => {
+  const removeList = () => {
     if (!selected || !confirm(`Supprimer « ${selected.name} » ?`)) return
-    await deleteWishlist(ownerId, selected.id)
-    const next = lists.filter((list) => list.id !== selected.id)
-    setLists(next)
-    setSelectedId(next[0]?.id ?? '')
+    return run('remove-list', async () => {
+      await deleteWishlist(ownerId, selected.id)
+      const next = lists.filter((list) => list.id !== selected.id)
+      setLists(next)
+      setSelectedId(next[0]?.id ?? '')
+    })
   }
-  const toggleCard = async (card: Card) => {
+  const toggleCard = (card: Card) => {
     if (!selected || selected.readOnly) return
-    setResolved((prev) => [
-      ...new Map([...prev, card].map((item) => [item.id, item])).values(),
-    ])
-    const cardIds = selected.cardIds.includes(card.id)
-      ? selected.cardIds.filter((id) => id !== card.id)
-      : [...selected.cardIds, card.id]
-    await persist({ ...selected, cardIds, updatedAt: Date.now() })
+    return run(`card-${card.id}`, async () => {
+      setResolved((prev) => [
+        ...new Map([...prev, card].map((item) => [item.id, item])).values(),
+      ])
+      const cardIds = selected.cardIds.includes(card.id)
+        ? selected.cardIds.filter((id) => id !== card.id)
+        : [...selected.cardIds, card.id]
+      await persist({ ...selected, cardIds, updatedAt: Date.now() })
+    })
   }
   const copy = async (value: string, message: string) => {
     await navigator.clipboard.writeText(value)
@@ -211,48 +193,37 @@ export default function WishlistsPage({
     )
     setTab('share')
   }
-  const importList = async () => {
-    try {
-      const parsed = decodeWishlist(importValue)
-      const next: Wishlist =
-        parsed.kind === 'static'
-          ? makeList(ownerId, parsed.name, parsed.cardIds)
-          : {
-              ...makeList(ownerId, `${parsed.sourceUsername} - Liste liée`),
-              sourceOwnerId: parsed.sourceOwnerId,
-              sourceListId: parsed.sourceListId,
-              sourceUsername: parsed.sourceUsername,
-              readOnly: true,
-            }
-      await putWishlist(next)
-      const refreshed = await getWishlists(ownerId)
-      setLists(refreshed)
-      setSelectedId(next.id)
-      setImportValue('')
-      setNotice(
-        parsed.kind === 'dynamic'
-          ? 'Liste dynamique liée en lecture seule.'
-          : 'Liste ajoutée à votre compte.',
-      )
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Import impossible.')
-    }
-  }
-  const owners = useMemo(() => {
-    const result = new Map<string, string[]>()
-    selectedCards.forEach((card) =>
-      card.contacts.forEach((name) =>
-        result.set(name, [...(result.get(name) ?? []), card.title]),
-      ),
-    )
-    return [...result.entries()].sort((a, b) => b[1].length - a[1].length)
-  }, [selectedCards])
-  const missing = selectedCards
-    .filter((card) => !card.contacts.length)
-    .map((card) => card.title)
-  const contactText = selected
-    ? `Bonjour ! Je recherche les cartes de la liste « ${selected.name} » :\n\n${owners.map(([name, names]) => `${name} possède : ${names.join(', ')}`).join('\n')}${missing.length ? `\n\nSans possesseur parmi mes contacts : ${missing.join(', ')}` : ''}\n\nSi un échange vous intéresse, envoyez-moi un message !`
-    : ''
+  const importList = () =>
+    run('import-list', async () => {
+      try {
+        const parsed = decodeWishlist(importValue)
+        const next: Wishlist =
+          parsed.kind === 'static'
+            ? makeWishlist(ownerId, parsed.name, parsed.cardIds)
+            : {
+                ...makeWishlist(ownerId, `${parsed.sourceUsername} - Liste liée`),
+                sourceOwnerId: parsed.sourceOwnerId,
+                sourceListId: parsed.sourceListId,
+                sourceUsername: parsed.sourceUsername,
+                readOnly: true,
+              }
+        await putWishlist(next)
+        const refreshed = await getWishlists(ownerId)
+        setLists(refreshed)
+        setSelectedId(next.id)
+        setImportValue('')
+        setNotice(
+          parsed.kind === 'dynamic'
+            ? 'Liste dynamique liée en lecture seule.'
+            : 'Liste ajoutée à votre compte.',
+        )
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : 'Import impossible.')
+      }
+    })
+  const owners = useMemo(() => groupCardsByOwner(selectedCards), [selectedCards])
+  const missing = selectedCards.filter((card) => !card.contacts.length)
+  const contactText = formatOwnersText(owners)
 
   return (
     <div className="wishlists-page">
@@ -261,11 +232,25 @@ export default function WishlistsPage({
           <h1>Listes de souhaits</h1>
           <p>Organisez vos recherches, partagez-les et trouvez qui contacter.</p>
         </div>
-        <button className="primary small" onClick={addList}>
-          <Plus size={17} />
-          Nouvelle liste
+        <button
+          className="button primary small"
+          disabled={isPending('add-list')}
+          onClick={addList}
+        >
+          {isPending('add-list') ? (
+            <LoadingSpinner label="Création…" />
+          ) : (
+            <>
+              <Plus size={17} /> Nouvelle liste
+            </>
+          )}
         </button>
       </div>
+      {isPending() ? (
+        <div className="action-loading">
+          <LoadingSpinner label="Enregistrement…" />
+        </div>
+      ) : null}
       <div className="wishlist-layout">
         <aside className="wishlist-sidebar">
           <strong>MES LISTES</strong>
@@ -286,7 +271,11 @@ export default function WishlistsPage({
             </button>
           ))}
         </aside>
-        {selected ? (
+        {listsLoading ? (
+          <div className="page-loading">
+            <LoadingSpinner label="Chargement des listes…" />
+          </div>
+        ) : selected ? (
           <section className="wishlist-workspace">
             <header>
               <div>
@@ -304,15 +293,28 @@ export default function WishlistsPage({
                 </span>
               </div>
               {!selected.readOnly ? (
-                <button onClick={rename} title="Renommer">
-                  <Pencil size={17} />
+                <button
+                  disabled={isPending('rename-list')}
+                  onClick={rename}
+                  title="Renommer"
+                >
+                  {isPending('rename-list') ? (
+                    <LoadingSpinner label="" />
+                  ) : (
+                    <Pencil size={17} />
+                  )}
                 </button>
               ) : null}
               <button
+                disabled={isPending('remove-list')}
                 onClick={removeList}
                 title={selected.readOnly ? 'Retirer le lien' : 'Supprimer'}
               >
-                <Trash2 size={17} />
+                {isPending('remove-list') ? (
+                  <LoadingSpinner label="" />
+                ) : (
+                  <Trash2 size={17} />
+                )}
               </button>
             </header>
             <nav className="wishlist-tabs">
@@ -354,15 +356,14 @@ export default function WishlistsPage({
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Rechercher dans toutes les cartes…"
                       />
-                      {searching ? <small>Recherche…</small> : null}
+                      {searching ? <LoadingSpinner label="Recherche…" /> : null}
                     </label>
                     <select
                       aria-label="Filtrer la recherche par rareté"
                       value={searchRarity ?? ''}
                       onChange={(event) =>
                         setSearchRarity(
-                          (event.target.value || undefined) as
-                            import('../types').Rarity | undefined,
+                          (event.target.value || undefined) as Rarity | undefined,
                         )
                       }
                     >
@@ -420,7 +421,9 @@ export default function WishlistsPage({
                     />
                   ))}
                   {selectedCards.length < selected.cardIds.length ? (
-                    <div className="wishlist-loading">Chargement des cartes…</div>
+                    <div className="wishlist-loading">
+                      <LoadingSpinner label="Chargement des cartes…" />
+                    </div>
                   ) : null}
                   {!selected.cardIds.length ? (
                     <div className="wishlist-empty">
@@ -490,9 +493,17 @@ export default function WishlistsPage({
                       onChange={(e) => setImportValue(e.target.value)}
                       placeholder="Collez une chaîne WML1.… ou un lien WMD1.…"
                     />
-                    <button disabled={!importValue.trim()} onClick={importList}>
-                      <Plus size={17} />
-                      Ajouter la liste
+                    <button
+                      disabled={!importValue.trim() || isPending('import-list')}
+                      onClick={importList}
+                    >
+                      {isPending('import-list') ? (
+                        <LoadingSpinner label="Ajout…" />
+                      ) : (
+                        <>
+                          <Plus size={17} /> Ajouter la liste
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

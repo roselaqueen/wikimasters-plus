@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { LayoutGrid, List, Search, SlidersHorizontal, X } from 'lucide-react'
 import CardDetailModal from '../components/cards/CardDetailModal'
 import CardItem from '../components/cards/CardItem'
-import type { TradeDraft } from '../components/trades/TradeComposer'
-import { loadWishlistCard, queryCollection, queryGlobalCards } from '../cardsApi'
-import type { Card, Rarity } from '../types'
-import { getWishlists } from '../wishlistDb'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
+import { useCardsQuery } from '../hooks/useCardsQuery'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { loadWishlistCard } from '../services/cardsApi'
+import type { Card, Rarity, TradeDraft } from '../types/domain'
+import { getWishlists } from '../services/wishlistRepository'
 
 type CardsPageProps = {
   collectionOnly: boolean
@@ -25,14 +27,10 @@ export default function CardsPage({
   onTrade,
 }: CardsPageProps) {
   const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const debouncedQuery = useDebouncedValue(query.trim())
   const [rarity, setRarity] = useState<Rarity>()
   const [sort, setSort] = useState('rarity')
   const [page, setPage] = useState(0)
-  const [result, setResult] = useState<Card[]>(() => (collectionOnly ? [] : initialCards))
-  const [resultTotal, setResultTotal] = useState(collectionOnly ? 0 : initialTotal)
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
   const [ownership, setOwnership] = useState<'all' | 'wanted'>('all')
   const [wishlistCards, setWishlistCards] = useState<Card[]>([])
   const [contactsOnly, setContactsOnly] = useState(false)
@@ -68,53 +66,35 @@ export default function CardsPage({
   }, [ownerId])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 600)
-    return () => window.clearTimeout(timer)
-  }, [query])
-
-  useEffect(() => {
     setPage(0)
   }, [debouncedQuery, rarity, sort, collectionOnly])
 
+  const {
+    cards: queriedCards,
+    total: queriedTotal,
+    loading,
+    error: loadError,
+  } = useCardsQuery({
+    collectionOnly,
+    page,
+    query: debouncedQuery,
+    rarity,
+    sort,
+    enabled: ownership === 'all',
+  })
+
+  const result = queriedCards.length || collectionOnly ? queriedCards : initialCards
+  const resultTotal = queriedTotal || (collectionOnly ? 0 : initialTotal)
+
   useEffect(() => {
-    if (ownership === 'wanted') {
-      setLoading(false)
-      return
-    }
-
-    let active = true
-    setLoading(true)
-
-    const request = collectionOnly
-      ? queryCollection({ page, query: debouncedQuery, rarity, sort })
-      : queryGlobalCards({ page, query: debouncedQuery, rarity, sort })
-
-    request
-      .then((data) => {
-        if (!active) return
-        setResult(data.cards)
-        setResultTotal(data.total)
-        setWanted(
-          (previous) =>
-            new Set([
-              ...previous,
-              ...data.cards.filter((card) => card.wanted).map((card) => card.id),
-            ]),
-        )
-        setLoadError('')
-      })
-      .catch((error: unknown) => {
-        if (!active) return
-        setLoadError(error instanceof Error ? error.message : 'Recherche impossible')
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [collectionOnly, page, debouncedQuery, rarity, sort, ownership])
+    setWanted(
+      (previous) =>
+        new Set([
+          ...previous,
+          ...queriedCards.filter((card) => card.wanted).map((card) => card.id),
+        ]),
+    )
+  }, [queriedCards])
 
   const filtered = useMemo(() => {
     const source = ownership === 'wanted' ? wishlistEligible : result
@@ -283,6 +263,7 @@ export default function CardsPage({
         ) : null}
 
         {loadError ? <div className="api-error">{loadError}</div> : null}
+        {loading ? <LoadingSpinner label="Chargement des cartes…" /> : null}
         {filtered.length ? (
           <div className={listView ? 'card-list' : 'card-grid'}>
             {filtered.map((card) => (

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
-import { supabase } from '../auth'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
+import { supabase } from '../services/auth'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -60,8 +61,8 @@ export default function LoginPage() {
             </div>
           </label>
           {error ? <div className="login-error">{error}</div> : null}
-          <button className="primary" disabled={loading}>
-            {loading ? 'Connexion…' : 'Connexion'}
+          <button className="button primary" disabled={loading}>
+            {loading ? <LoadingSpinner label="Connexion…" /> : 'Connexion'}
           </button>
         </form>
         <footer>

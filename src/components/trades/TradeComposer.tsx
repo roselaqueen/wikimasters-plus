@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeftRight, Check, Coins, Search, X } from 'lucide-react'
-import { queryCollection, queryFriendCollection } from '../../cardsApi'
-import { createTrade, getFriends } from '../../tradeApi'
+import { queryCollection, queryFriendCollection } from '../../services/cardsApi'
+import { createTrade, getFriends } from '../../services/tradeApi'
 import GameCard from '../cards/GameCard'
-import type { Card, Friend, Rarity } from '../../types'
+import LoadingSpinner from '../ui/LoadingSpinner'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import type { Card, Friend, Rarity, TradeDraft } from '../../types/domain'
 
-export type TradeDraft = { contact?: string; requestedCards?: Card[] }
 const rarities: Rarity[] = ['L', 'UR', 'SR', 'R', 'PC', 'C']
 
 export default function TradeComposer({
@@ -35,8 +36,8 @@ export default function TradeComposer({
   const [tab, setTab] = useState<'mine' | 'theirs'>('theirs')
   const [mineQuery, setMineQuery] = useState('')
   const [theirQuery, setTheirQuery] = useState('')
-  const [mineDebounced, setMineDebounced] = useState('')
-  const [theirDebounced, setTheirDebounced] = useState('')
+  const mineDebounced = useDebouncedValue(mineQuery.trim(), 400)
+  const theirDebounced = useDebouncedValue(theirQuery.trim(), 400)
   const [mineRarity, setMineRarity] = useState<Rarity | undefined>()
   const [theirRarity, setTheirRarity] = useState<Rarity | undefined>()
   const [minePage, setMinePage] = useState(0)
@@ -50,14 +51,6 @@ export default function TradeComposer({
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [confirming, setConfirming] = useState(false)
-  useEffect(() => {
-    const timer = setTimeout(() => setMineDebounced(mineQuery.trim()), 400)
-    return () => clearTimeout(timer)
-  }, [mineQuery])
-  useEffect(() => {
-    const timer = setTimeout(() => setTheirDebounced(theirQuery.trim()), 400)
-    return () => clearTimeout(timer)
-  }, [theirQuery])
   useEffect(() => setMinePage(0), [mineDebounced, mineRarity])
   useEffect(() => setTheirPage(0), [theirDebounced, theirRarity])
   useEffect(() => {
@@ -219,7 +212,7 @@ export default function TradeComposer({
           </button>
           <h2>Choisir un ami</h2>
           {loadingFriends ? (
-            <p>Chargement…</p>
+            <LoadingSpinner label="Chargement des amis…" />
           ) : friends.length ? (
             friends.map((item) => (
               <button key={item.id} onClick={() => setFriend(item)}>
@@ -383,7 +376,7 @@ export default function TradeComposer({
         <div className="trade-card-area">
           <div className="trade-card-grid">
             {loading ? (
-              <p>Chargement de la collection…</p>
+              <LoadingSpinner label="Chargement de la collection…" />
             ) : (
               shown.map((card) => {
                 const active = selected.includes(card.id)
@@ -428,9 +421,15 @@ export default function TradeComposer({
         <footer>
           <button onClick={onClose}>Annuler</button>
           {confirming ? <span>Confirmer l’envoi de cette offre ?</span> : null}
-          <button className="primary" disabled={sending} onClick={send}>
-            <ArrowLeftRight />
-            {sending ? 'Envoi…' : confirming ? 'Confirmer l’envoi' : 'Envoyer l’offre'}
+          <button className="button primary" disabled={sending} onClick={send}>
+            {sending ? (
+              <LoadingSpinner label="Envoi…" />
+            ) : (
+              <>
+                <ArrowLeftRight />
+                {confirming ? 'Confirmer l’envoi' : 'Envoyer l’offre'}
+              </>
+            )}
           </button>
         </footer>
       </section>
