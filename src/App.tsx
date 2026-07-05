@@ -15,20 +15,26 @@ const nav:{id:Page;label:string;icon:typeof Box}[]=[
  {id:'collection',label:'Collection',icon:Archive},{id:'wishlists',label:'Listes de souhaits',icon:Heart},{id:'cards',label:'Toutes les cartes',icon:LayoutGrid},
 ]
 const rarityLabels:Record<Rarity,string>={L:'Légendaire',UR:'Ultra rare',SR:'Super rare',R:'Rare',PC:'Peu commun',C:'Commun'}
+const pageRoutes:Record<string,Page>={collection:'collection',wishlists:'wishlists',cards:'cards'}
+const routeForPage:Record<Page,string>={collection:'collection',wishlists:'wishlists',cards:'cards',packs:'collection',trades:'collection',market:'collection',profile:'collection',friends:'collection',messages:'collection',settings:'collection'}
+const pageFromHash=():Page=>pageRoutes[window.location.hash.replace(/^#\/?/,'')]??'collection'
 
 export default function App(){
- const [page,setPage]=useState<Page>('cards'); const [mobile,setMobile]=useState(false)
+ const [page,setPage]=useState<Page>(pageFromHash); const [mobile,setMobile]=useState(false)
  const [settings,setSettings]=useState<Settings>(loadSettings)
  const [session,setSession]=useState<Session|null>(null);const [authReady,setAuthReady]=useState(false);const [liveCards,setLiveCards]=useState<Card[]>([]);const [liveTotal,setLiveTotal]=useState(0);const [cardsReady,setCardsReady]=useState(false);const [apiError,setApiError]=useState('')
  useEffect(()=>{saveSettings(settings);document.documentElement.dataset.theme=settings.theme;document.documentElement.style.setProperty('--accent',settings.accent)},[settings])
  useEffect(()=>{supabase.auth.getSession().then(({data})=>{setSession(data.session);setAuthReady(true)});const {data}=supabase.auth.onAuthStateChange((_event,next)=>{setSession(next);setAuthReady(true)});return()=>data.subscription.unsubscribe()},[])
+ useEffect(()=>{const syncRoute=()=>setPage(pageFromHash());window.addEventListener('hashchange',syncRoute);return()=>window.removeEventListener('hashchange',syncRoute)},[])
+ useEffect(()=>{if(session&&!pageRoutes[window.location.hash.replace(/^#\/?/,'')])window.history.replaceState(null,'',`${window.location.pathname}${window.location.search}#/collection`)},[session])
  useEffect(()=>{if(!session)return;setCardsReady(false);localStorage.setItem('wm_account_id',session.user.id);loadCards().then(data=>{setLiveCards(data.cards);setLiveTotal(data.total);setApiError('')}).catch(error=>setApiError(error instanceof Error?error.message:'API inaccessible')).finally(()=>setCardsReady(true))},[session])
  if(!authReady)return <main className="auth-loading">Connexion à WikiMasters…</main>
  if(!session&&API_MODE==='live')return <LoginScreen/>
  if(session&&API_MODE==='live'&&!cardsReady)return <main className="auth-loading"><div className="loader-ring"/><span>Chargement des cartes…</span></main>
  const catalog=API_MODE==='live'?liveCards:seedCards;const ownerId=session?.user.id??'demo:RoseLaQueen';const username=(session?.user.user_metadata?.username as string|undefined)??session?.user.email?.split('@')[0]??'RoseLaQueen'
+ const navigate=(next:Page)=>{setPage(next);setMobile(false);window.location.hash=`/${routeForPage[next]}`}
  return <div className={`app density-${settings.density}`}>
-  <aside className={mobile?'open':''}><button className="brand" onClick={()=>setPage('cards')}><span>W</span>WikiMasters<em>+</em></button><nav>{nav.map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>{setPage(n.id);setMobile(false)}}><n.icon size={19}/><span>{n.label}</span>{n.id==='messages'?<b>2</b>:null}</button>)}</nav><div className="side-foot"><span className={`mode-dot ${API_MODE}`}/><div><strong>{API_MODE==='live'?'API connectée':'Mode démo sécurisé'}</strong><small>{API_MODE==='live'?'Données WikiMasters':'Aucune écriture distante'}</small></div></div></aside>
+  <aside className={mobile?'open':''}><button className="brand" onClick={()=>navigate('collection')}><span>W</span>WikiMasters<em>+</em></button><nav>{nav.map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id)}><n.icon size={19}/><span>{n.label}</span>{n.id==='messages'?<b>2</b>:null}</button>)}</nav><div className="side-foot"><span className={`mode-dot ${API_MODE}`}/><div><strong>{API_MODE==='live'?'API connectée':'Mode démo sécurisé'}</strong><small>{API_MODE==='live'?'Données WikiMasters':'Aucune écriture distante'}</small></div></div></aside>
   <div className="shell"><header><button className="mobile-menu" aria-label={mobile?'Fermer le menu':'Ouvrir le menu'} onClick={()=>setMobile(v=>!v)}><Menu/></button><div className="crumb">Bibliothèque <ChevronRight size={14}/> <strong>{nav.find(n=>n.id===page)?.label}</strong>{apiError?<span className="api-warning">{apiError}</span>:null}</div><div className="utilities"><button className="avatar">{username.slice(0,2).toUpperCase()}</button><span className="username">{username}</span><button className="logout" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></header><main>{renderPage(page,settings,setSettings,catalog,liveTotal,ownerId)}</main></div>
  </div>
 }
