@@ -60,13 +60,24 @@ export function encodeWishlist(list:Wishlist):string {
   return `WML1.${btoa(binary).replaceAll('+','-').replaceAll('/','_').replaceAll('=','')}`
 }
 
-export function decodeWishlist(value:string):{name:string;cardIds:string[]} {
+export function encodeDynamicWishlist(list:Wishlist,username:string):string {
+  const payload=JSON.stringify({v:1,o:list.sourceOwnerId??list.ownerId,l:list.sourceListId??list.id,u:list.sourceUsername??username})
+  const bytes=new TextEncoder().encode(payload);let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte))
+  return `WMD1.${btoa(binary).replaceAll('+','-').replaceAll('/','_').replaceAll('=','')}`
+}
+
+export function decodeWishlist(value:string):{kind:'static';name:string;cardIds:string[]}|{kind:'dynamic';sourceOwnerId:string;sourceListId:string;sourceUsername:string} {
   const compact=value.trim()
+  if(compact.startsWith('WMD1.')){
+    const encoded=compact.slice(5).replaceAll('-','+').replaceAll('_','/');const binary=atob(encoded.padEnd(Math.ceil(encoded.length/4)*4,'='));const bytes=Uint8Array.from(binary,char=>char.charCodeAt(0));const data=JSON.parse(new TextDecoder().decode(bytes)) as {v?:number;o?:unknown;l?:unknown;u?:unknown}
+    if(data.v!==1||typeof data.o!=='string'||typeof data.l!=='string'||typeof data.u!=='string')throw new Error('Lien dynamique invalide ou incompatible.')
+    return{kind:'dynamic',sourceOwnerId:data.o,sourceListId:data.l,sourceUsername:data.u.slice(0,80)}
+  }
   if(!compact.startsWith('WML1.')) throw new Error('Format de liste non reconnu.')
   const encoded=compact.slice(5).replaceAll('-','+').replaceAll('_','/')
   const binary=atob(encoded.padEnd(Math.ceil(encoded.length/4)*4,'='))
   const bytes=Uint8Array.from(binary,char=>char.charCodeAt(0))
   const data=JSON.parse(new TextDecoder().decode(bytes)) as {v?:number;n?:unknown;c?:unknown}
   if(data.v!==1||typeof data.n!=='string'||!Array.isArray(data.c)||!data.c.every(id=>typeof id==='string')) throw new Error('Liste invalide ou incompatible.')
-  return {name:data.n.slice(0,80),cardIds:[...new Set(data.c)]}
+  return {kind:'static',name:data.n.slice(0,80),cardIds:[...new Set(data.c)]}
 }

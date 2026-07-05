@@ -41,13 +41,13 @@ export default function App(){
  const openTrade=(draft:TradeDraft)=>{setTradeDraft(draft);navigate('trades')}
  return <div className={`app density-${settings.density}`}>
   <aside className={mobile?'open':''}><button className="brand" onClick={()=>navigate('collection')}><span>W</span>WikiMasters<em>+</em></button><nav>{nav.map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id)}><n.icon size={19}/><span>{n.label}</span>{n.id==='messages'?<b>2</b>:null}</button>)}</nav><div className="side-foot"><span className={`mode-dot ${API_MODE}`}/><div><strong>{API_MODE==='live'?'API connectée':'Mode démo sécurisé'}</strong><small>{API_MODE==='live'?'Données WikiMasters':'Aucune écriture distante'}</small></div></div></aside>
-  <div className="shell"><header><button className="mobile-menu" aria-label={mobile?'Fermer le menu':'Ouvrir le menu'} onClick={()=>setMobile(v=>!v)}><Menu/></button><div className="crumb">Bibliothèque <ChevronRight size={14}/> <strong>{nav.find(n=>n.id===page)?.label}</strong>{apiError?<span className="api-warning">{apiError}</span>:null}</div><div className="utilities"><button className="avatar">{username.slice(0,2).toUpperCase()}</button><span className="username">{username}</span><button className="logout" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></header><main>{renderPage(page,settings,setSettings,catalog,liveTotal,ownerId,openTrade,tradeDraft,()=>setTradeDraft(null))}</main></div>
+  <div className="shell"><header><button className="mobile-menu" aria-label={mobile?'Fermer le menu':'Ouvrir le menu'} onClick={()=>setMobile(v=>!v)}><Menu/></button><div className="crumb">Bibliothèque <ChevronRight size={14}/> <strong>{nav.find(n=>n.id===page)?.label}</strong>{apiError?<span className="api-warning">{apiError}</span>:null}</div><div className="utilities"><button className="avatar">{username.slice(0,2).toUpperCase()}</button><span className="username">{username}</span><button className="logout" onClick={()=>supabase.auth.signOut()}>Déconnexion</button></div></header><main>{renderPage(page,settings,setSettings,catalog,liveTotal,ownerId,username,openTrade,tradeDraft,()=>setTradeDraft(null))}</main></div>
  </div>
 }
 
-function renderPage(page:Page,settings:Settings,setSettings:(s:Settings)=>void,cards:Card[],total:number,ownerId:string,onTrade:(draft:TradeDraft)=>void,tradeDraft:TradeDraft|null,onDraftConsumed:()=>void){
+function renderPage(page:Page,settings:Settings,setSettings:(s:Settings)=>void,cards:Card[],total:number,ownerId:string,username:string,onTrade:(draft:TradeDraft)=>void,tradeDraft:TradeDraft|null,onDraftConsumed:()=>void){
  if(page==='cards'||page==='collection') return <CardsPage collectionOnly={page==='collection'} cards={cards} total={total} ownerId={ownerId} onTrade={onTrade}/>
- if(page==='wishlists') return <WishlistsPage ownerId={ownerId} cards={cards} onTrade={onTrade}/>
+ if(page==='wishlists') return <WishlistsPage ownerId={ownerId} username={username} cards={cards} onTrade={onTrade}/>
  if(page==='trades') return <TradesPage currentUserId={ownerId} initialDraft={tradeDraft} onDraftConsumed={onDraftConsumed}/>
  if(page==='profile') return <ProfilePage settings={settings} setSettings={setSettings}/>
  if(page==='settings') return <SettingsPage settings={settings} setSettings={setSettings}/>

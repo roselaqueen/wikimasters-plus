@@ -36,12 +36,18 @@ Deno.serve(async request=>{
  if(route==='/wishlists'&&request.method==='GET'){
    const {data,error}=await db.from('wishlists').select('*').eq('owner_id',user.id).order('updated_at',{ascending:false})
    if(error)return json({error:error.message},500)
-   return json((data??[]).map(row=>({id:row.list_id,ownerId:row.owner_id,name:row.name,cardIds:row.card_ids,createdAt:new Date(row.created_at).getTime(),updatedAt:new Date(row.updated_at).getTime()})))
+   const rows=data??[];const linked=rows.filter(row=>row.source_owner_id&&row.source_list_id);let sourceRows:{owner_id:string;list_id:string;name:string;card_ids:string[];updated_at:string}[]=[]
+   if(linked.length){const owners=[...new Set(linked.map(row=>row.source_owner_id))];const ids=[...new Set(linked.map(row=>row.source_list_id))];const result=await db.from('wishlists').select('*').in('owner_id',owners).in('list_id',ids);if(result.error)return json({error:result.error.message},500);sourceRows=result.data??[]}
+   return json(rows.map(row=>{const source=sourceRows.find(item=>item.owner_id===row.source_owner_id&&item.list_id===row.source_list_id);return{id:row.list_id,ownerId:row.owner_id,name:source?`${row.source_username} - ${source.name}`:row.name,cardIds:source?source.card_ids:row.card_ids,createdAt:new Date(row.created_at).getTime(),updatedAt:new Date(source?.updated_at??row.updated_at).getTime(),sourceOwnerId:row.source_owner_id??undefined,sourceListId:row.source_list_id??undefined,sourceUsername:row.source_username??undefined,readOnly:Boolean(row.source_owner_id)}}))
  }
  if(route==='/wishlists'&&request.method==='PUT'){
-   const body=await request.json() as {id:string;name:string;cardIds:string[];createdAt:number;updatedAt:number}
+   const body=await request.json() as {id:string;name:string;cardIds:string[];createdAt:number;updatedAt:number;sourceOwnerId?:string;sourceListId?:string;sourceUsername?:string}
    if(!body.id||!body.name||!Array.isArray(body.cardIds))return json({error:'Invalid wishlist'},400)
-   const {error}=await db.from('wishlists').upsert({owner_id:user.id,list_id:body.id,name:body.name.slice(0,80),card_ids:[...new Set(body.cardIds)],created_at:new Date(body.createdAt||Date.now()).toISOString(),updated_at:new Date().toISOString()},{onConflict:'owner_id,list_id'})
+   const existing=await db.from('wishlists').select('source_owner_id').eq('owner_id',user.id).eq('list_id',body.id).maybeSingle()
+   if(existing.data?.source_owner_id)return json({error:'Linked wishlists are read-only'},403)
+   let name=body.name.slice(0,80),cardIds=[...new Set(body.cardIds)],sourceOwnerId=null,sourceListId=null,sourceUsername=null
+   if(body.sourceOwnerId&&body.sourceListId&&body.sourceUsername){const source=await db.from('wishlists').select('name').eq('owner_id',body.sourceOwnerId).eq('list_id',body.sourceListId).maybeSingle();if(source.error||!source.data)return json({error:'Source wishlist not found'},404);sourceOwnerId=body.sourceOwnerId;sourceListId=body.sourceListId;sourceUsername=body.sourceUsername.slice(0,80);name=`${sourceUsername} - ${source.data.name}`.slice(0,80);cardIds=[]}
+   const {error}=await db.from('wishlists').upsert({owner_id:user.id,list_id:body.id,name,card_ids:cardIds,source_owner_id:sourceOwnerId,source_list_id:sourceListId,source_username:sourceUsername,created_at:new Date(body.createdAt||Date.now()).toISOString(),updated_at:new Date().toISOString()},{onConflict:'owner_id,list_id'})
    return error?json({error:error.message},500):json({ok:true})
  }
  const match=route.match(/^\/wishlists\/([^/]+)$/)
