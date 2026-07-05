@@ -6,6 +6,7 @@ const noImagePath=`${import.meta.env.BASE_URL}cards/no-image.svg`
 type ApiCard={id:string;atk:number;def:number;rarity:Rarity;summary:string|null;category:string|null;image_url:string|null;wikipedia_title:string;wikipedia_url:string}
 type CardsResponse={cards:ApiCard[];total:number|null;searchHasMore?:boolean;quantities:Record<string,number>;ownedCardIds:string[];wishlistCardIds:string[];friendOwners:Record<string,unknown>}
 type CollectionResponse={collection:unknown[];total:number|null;rarityCounts?:Record<string,number>}
+type CollectionStatsResponse={total:number;rarityCounts:Record<string,number>}
 export type CardQuery={page?:number;query?:string;rarity?:Rarity;sort?:string}
 
 function ownerNames(value:unknown):string[]{
@@ -56,9 +57,12 @@ export async function queryCollection({page=0,query='',rarity,sort='rarity'}:Car
  const params=new URLSearchParams({sort,page:String(page),stats:'0'})
  if(query.trim())params.set('q',query.trim())
  if(rarity)params.set('rarity',rarity)
- const data=await apiGet<CollectionResponse>(`/my-collection?${params}`)
+ const statsParams=new URLSearchParams({sort})
+ if(query.trim())statsParams.set('q',query.trim())
+ if(rarity)statsParams.set('rarity',rarity)
+ const [data,stats]=await Promise.all([apiGet<CollectionResponse>(`/my-collection?${params}`),apiGet<CollectionStatsResponse>(`/my-collection/stats?${statsParams}`)])
  const mapped=data.collection.map(mapCollectionItem).filter((card):card is Card=>Boolean(card))
- return{cards:mapped,total:typeof data.total==='number'?data.total:page*50+mapped.length}
+ return{cards:mapped,total:typeof data.total==='number'?data.total:stats.total}
 }
 
 const wishlistCardCache=new Map<string,Card>()
