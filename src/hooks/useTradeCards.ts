@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { loadWishlistCard, mapCollectionItem } from '../services/cardsApi'
 import type { Card, Trade } from '../types/domain'
 
-export function useTradeCards(trades: Trade[]) {
+export function useTradeCards(trades: Trade[], accountId: string) {
   const [cards, setCards] = useState<Map<string, Card>>(() => new Map())
   const [loading, setLoading] = useState(false)
 
@@ -18,7 +18,7 @@ export function useTradeCards(trades: Trade[]) {
         try {
           return [
             item.card_id,
-            embedded ?? (await loadWishlistCard(item.card_id)),
+            embedded ?? (await loadWishlistCard(item.card_id, accountId)),
           ] as const
         } catch {
           return null
@@ -41,7 +41,7 @@ export function useTradeCards(trades: Trade[]) {
     return () => {
       active = false
     }
-  }, [trades])
+  }, [accountId, trades])
 
   return { cards, loading }
 }

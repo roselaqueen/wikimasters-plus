@@ -52,7 +52,7 @@ export default function CardsPage({
 
     getWishlists(ownerId)
       .then((lists) => [...new Set(lists.flatMap((list) => list.cardIds))])
-      .then((ids) => Promise.all(ids.map(loadWishlistCard)))
+      .then((ids) => Promise.all(ids.map((id) => loadWishlistCard(id, ownerId))))
       .then((cards) => {
         if (!active) return
         setWishlistCards(cards)

@@ -18,7 +18,10 @@ export default function TradesPage({
   onDraftConsumed: () => void
 }) {
   const { trades, loading, error, reload } = useTrades()
-  const { cards: tradeCards, loading: cardsLoading } = useTradeCards(trades)
+  const { cards: tradeCards, loading: cardsLoading } = useTradeCards(
+    trades,
+    currentUserId,
+  )
   const { run, isPending } = useAsyncAction()
   const [tab, setTab] = useState<'received' | 'sent' | 'history'>('received')
   const [composer, setComposer] = useState(Boolean(initialDraft))

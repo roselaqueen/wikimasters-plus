@@ -60,6 +60,14 @@ export default function WishlistsPage({
   const searchSequence = useRef(0)
   const { run, isPending } = useAsyncAction()
 
+  useEffect(() => {
+    setResolved(cards)
+    setLists([])
+    setSelectedId('')
+    setSearchResults([])
+    setQuery('')
+  }, [cards, ownerId])
+
   useEffect(
     () =>
       setResolved((prev) => [
@@ -130,12 +138,12 @@ export default function WishlistsPage({
       (id) => !resolved.some((card) => card.id === id),
     )
     if (!missing.length) return
-    Promise.all(missing.map(loadWishlistCard)).then((found) =>
+    Promise.all(missing.map((id) => loadWishlistCard(id, ownerId))).then((found) =>
       setResolved((prev) => [
         ...new Map([...prev, ...found].map((card) => [card.id, card])).values(),
       ]),
     )
-  }, [selected, resolved])
+  }, [ownerId, selected, resolved])
 
   const persist = async (next: Wishlist) => {
     if (next.readOnly) throw new Error('Cette liste liée est en lecture seule.')
@@ -411,6 +419,7 @@ export default function WishlistsPage({
                       card={card}
                       wanted={!selected.readOnly}
                       removeAction={!selected.readOnly}
+                      showOwnership
                       onClick={() => setDetailCard(card)}
                       onWant={selected.readOnly ? undefined : () => toggleCard(card)}
                       onExchange={(contact) =>

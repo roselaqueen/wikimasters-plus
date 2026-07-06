@@ -160,10 +160,11 @@ export async function queryCollection({
 const wishlistCardCache = new Map<string, Card>()
 const wishlistCardPending = new Map<string, Promise<Card>>()
 
-export async function loadWishlistCard(id: string): Promise<Card> {
-  const cached = wishlistCardCache.get(id)
+export async function loadWishlistCard(id: string, accountId: string): Promise<Card> {
+  const cacheKey = `${accountId}:${id}`
+  const cached = wishlistCardCache.get(cacheKey)
   if (cached) return cached
-  const pending = wishlistCardPending.get(id)
+  const pending = wishlistCardPending.get(cacheKey)
   if (pending) return pending
   const request = (async () => {
     const detail = await apiGet<ApiCard>(`/cards/${encodeURIComponent(id)}`)
@@ -183,13 +184,13 @@ export async function loadWishlistCard(id: string): Promise<Card> {
       contacts: [],
       category: detail.category ?? 'Wikipédia',
     }
-    wishlistCardCache.set(id, card)
+    wishlistCardCache.set(cacheKey, card)
     return card
   })()
-  wishlistCardPending.set(id, request)
+  wishlistCardPending.set(cacheKey, request)
   try {
     return await request
   } finally {
-    wishlistCardPending.delete(id)
+    wishlistCardPending.delete(cacheKey)
   }
 }

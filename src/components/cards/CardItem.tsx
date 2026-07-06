@@ -1,4 +1,4 @@
-import { ArrowLeftRight, UsersRound } from 'lucide-react'
+import { ArrowLeftRight, CircleCheck, CircleX, UsersRound } from 'lucide-react'
 import GameCard from './GameCard'
 import type { Card } from '../../types/domain'
 
@@ -9,6 +9,7 @@ export default function CardItem({
   onWant,
   onExchange,
   removeAction = false,
+  showOwnership = false,
 }: {
   card: Card
   wanted?: boolean
@@ -16,6 +17,7 @@ export default function CardItem({
   onWant?: () => void
   onExchange?: (contact: string) => void
   removeAction?: boolean
+  showOwnership?: boolean
 }) {
   const visibleOwners = card.contacts.slice(0, 2)
   const otherOwners = card.contacts.slice(2)
@@ -35,6 +37,16 @@ export default function CardItem({
         onWant={onWant}
         removeAction={removeAction}
       />
+      {showOwnership ? (
+        <div className={card.owned > 0 ? 'card-owned-status owned' : 'card-owned-status'}>
+          {card.owned > 0 ? <CircleCheck /> : <CircleX />}
+          <span>
+            {card.owned > 0
+              ? `Possédée · ${card.owned} exemplaire${card.owned > 1 ? 's' : ''}`
+              : 'Non possédée'}
+          </span>
+        </div>
+      ) : null}
       <div className={`card-owners ${card.contacts.length ? 'has-owners' : 'empty'}`}>
         <strong>
           <UsersRound />

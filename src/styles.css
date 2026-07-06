@@ -2908,6 +2908,34 @@ button .loading-state {
   color: var(--accent);
 }
 
+.card-owned-status {
+  width: 160px;
+  min-height: 32px;
+  margin-top: 7px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #5a4248;
+  border-radius: 7px;
+  background: color-mix(in srgb, #e35b6b 9%, var(--surface));
+  color: #df8792;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.card-owned-status.owned {
+  border-color: #315f4d;
+  background: color-mix(in srgb, #25c58a 10%, var(--surface));
+  color: #50d6a5;
+}
+
+.card-owned-status svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
 @media (max-width: 760px) {
   .trade-list article {
     grid-template-columns: 1fr;

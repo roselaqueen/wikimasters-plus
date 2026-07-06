@@ -72,6 +72,9 @@ Le projet utilise un proxy Vite local et une authentification Supabase normale. 
 - `GET /api/cards?page=<n>&q=<recherche>&rarity=<L|UR|SR|R|PC|C>&sort=<tri>` alimente la pagination et les filtres de « Toutes les cartes ».
 - `GET /api/my-collection?sort=<tri>&q=<recherche>&rarity=<rareté>&page=<n>&stats=0` alimente la Collection.
 - `GET /api/cards/<id>` résout les cartes d'une liste importée ou enregistrée qui ne figurent pas dans la première page.
+- Le cache de résolution des cartes de wishlist est indexé par compte et par carte. Les quantités
+  possédées et les possesseurs amis d'une liste dynamique sont donc recalculés avec la session qui
+  consulte la liste, jamais réutilisés depuis le compte du créateur ou une session précédente.
 - L’application fonctionne uniquement avec les données réelles du compte connecté.
 - Les mutations de paquet, enchère et profil restent volontairement non connectées. Les échanges sont activés avec confirmation explicite et un proxy limité aux seules routes documentées ci-dessous.
 
