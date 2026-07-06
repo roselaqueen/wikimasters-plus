@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeftRight, Check, Clock, Plus, RotateCcw, X } from 'lucide-react'
+import { ArrowLeftRight, Check, Clock, Plus, X } from 'lucide-react'
 import { updateTrade } from '../services/tradeApi'
 import TradeComposer from '../components/trades/TradeComposer'
+import TradeDetailModal from '../components/trades/TradeDetailModal'
 import type { Card, Trade, TradeDraft } from '../types/domain'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { useAsyncAction } from '../hooks/useAsyncAction'
@@ -27,6 +28,7 @@ export default function TradesPage({
   const [composer, setComposer] = useState(Boolean(initialDraft))
   const [draft, setDraft] = useState<TradeDraft | null>(initialDraft ?? null)
   const [notice, setNotice] = useState('')
+  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null)
   useEffect(() => {
     if (initialDraft) {
       setDraft(initialDraft)
@@ -139,7 +141,16 @@ export default function TradesPage({
               (item) => item.offered_by === trade.recipient_id,
             )
             return (
-              <article key={trade.id}>
+              <article
+                key={trade.id}
+                className="trade-list-item"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedTrade(trade)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') setSelectedTrade(trade)
+                }}
+              >
                 <header>
                   <i>{trade.status === 'pending' ? <Clock /> : <Check />}</i>
                   <span>
@@ -186,7 +197,10 @@ export default function TradesPage({
                   {cardsLoading ? <LoadingSpinner label="Cartes…" /> : null}
                 </div>
                 {trade.status === 'pending' ? (
-                  <div className="trade-actions">
+                  <div
+                    className="trade-actions"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     {trade.recipient_id === currentUserId ? (
                       <>
                         <button
@@ -195,13 +209,6 @@ export default function TradesPage({
                         >
                           <X />
                           Refuser
-                        </button>
-                        <button
-                          className="counter-button"
-                          disabled={cardsLoading}
-                          onClick={() => counterOffer(trade)}
-                        >
-                          <RotateCcw /> Contre-offre
                         </button>
                         <button
                           className="button primary"
@@ -255,6 +262,22 @@ export default function TradesPage({
           <Check />
           {notice}
         </div>
+      ) : null}
+      {selectedTrade ? (
+        <TradeDetailModal
+          trade={selectedTrade}
+          cards={tradeCards}
+          loading={cardsLoading}
+          canCounter={
+            selectedTrade.status === 'pending' &&
+            selectedTrade.recipient_id === currentUserId
+          }
+          onClose={() => setSelectedTrade(null)}
+          onCounter={() => {
+            counterOffer(selectedTrade)
+            setSelectedTrade(null)
+          }}
+        />
       ) : null}
       {composer ? (
         <TradeComposer

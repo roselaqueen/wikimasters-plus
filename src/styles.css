@@ -2959,3 +2959,112 @@ button .loading-state {
     transform: scale(0.65);
   }
 }
+
+/* Détail d'une offre et hauteur commune des contrôles d'action. */
+.button,
+.trade-actions button,
+.friend-picker > button:not(.modal-x),
+.trade-composer > footer button,
+.trade-tools > button,
+.trade-pagination button,
+.card-detail-actions > button,
+.card-detail-actions .card-wishlist-picker > button,
+.wishlist-heading > button {
+  height: 40px;
+  min-height: 40px;
+}
+
+.trade-list-item {
+  cursor: pointer;
+}
+
+.trade-list-item:hover,
+.trade-list-item:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  outline: none;
+}
+
+.trade-detail-modal {
+  width: min(980px, 94vw);
+  max-height: 90vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.trade-detail-modal > header,
+.trade-detail-modal > footer {
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.trade-detail-modal > header h2,
+.trade-detail-modal > header p {
+  margin: 0;
+}
+
+.trade-detail-modal > header p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.trade-detail-modal > footer {
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+}
+
+.trade-detail-modal .counter-button {
+  border-color: #765b13;
+  background: #33290d;
+  color: #f6c537;
+}
+
+.trade-detail-sides {
+  min-height: 320px;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+
+.trade-detail-sides > section {
+  min-width: 0;
+}
+
+.trade-detail-sides h3 {
+  margin: 0 0 12px;
+}
+
+.trade-detail-sides section > p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #f6c537;
+  font-weight: 700;
+}
+
+.trade-detail-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 160px);
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .trade-detail-sides {
+    grid-template-columns: 1fr;
+  }
+
+  .trade-detail-arrow {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+}

@@ -65,10 +65,7 @@ export default function TradeComposer({
     getFriends(currentUserId)
       .then((items) => {
         setFriends(items)
-        setFriend(
-          items.find((item) => item.username === draft?.contact) ??
-            (draft?.contact ? null : (items[0] ?? null)),
-        )
+        setFriend(items.find((item) => item.username === draft?.contact) ?? null)
       })
       .catch(() => setError('Impossible de charger vos amis.'))
       .finally(() => setLoadingFriends(false))
