@@ -40,8 +40,8 @@ export default function CardItem({
           {card.owned > 0 ? <CircleCheck /> : <CircleX />}
           <span>
             {card.owned > 0
-              ? `Possédée · ${card.owned} exemplaire${card.owned > 1 ? 's' : ''}`
-              : 'Non possédée · 0 exemplaire'}
+              ? `Possédée · ${card.totalCopies ?? 0} dans le jeu`
+              : `Non possédée · ${card.totalCopies ?? 0} dans le jeu`}
           </span>
         </div>
       ) : null}

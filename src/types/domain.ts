@@ -8,6 +8,7 @@ export type Card = {
   atk: number
   def: number
   owned: number
+  totalCopies?: number
   wanted: boolean
   contacts: string[]
   category: string

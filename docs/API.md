@@ -75,6 +75,8 @@ Le projet utilise un proxy Vite local et une authentification Supabase normale. 
 - Le cache de résolution des cartes de wishlist est indexé par compte et par carte. Les quantités
   possédées et les possesseurs amis d'une liste dynamique sont donc recalculés avec la session qui
   consulte la liste, jamais réutilisés depuis le compte du créateur ou une session précédente.
+- Dans `GET /api/cards`, `quantities[cardId]` représente le nombre total d'exemplaires en
+  circulation. La possession personnelle est distincte et provient de `ownedCardIds`.
 - L’application fonctionne uniquement avec les données réelles du compte connecté.
 - Les mutations de paquet, enchère et profil restent volontairement non connectées. Les échanges sont activés avec confirmation explicite et un proxy limité aux seules routes documentées ci-dessous.
 

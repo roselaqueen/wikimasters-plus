@@ -62,8 +62,12 @@ export default function CardDetailModal({
           </div>
           <dl>
             <div>
-              <dt>Exemplaires</dt>
-              <dd>{card.owned}</dd>
+              <dt>Dans le jeu</dt>
+              <dd>{card.totalCopies ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>Ma collection</dt>
+              <dd>{card.owned > 0 ? 'Possédée' : 'Non possédée'}</dd>
             </div>
             <div>
               <dt>Catégorie</dt>

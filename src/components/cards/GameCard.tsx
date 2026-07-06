@@ -44,12 +44,12 @@ export default function GameCard({
           >
             <X size={16} />
           </button>
-        ) : showOwnedCount ? (
+        ) : showOwnedCount && card.totalCopies !== undefined ? (
           <span
             className="owned-count"
-            title={`${card.owned} exemplaire${card.owned > 1 ? 's' : ''}`}
+            title={`${card.totalCopies} exemplaire${card.totalCopies > 1 ? 's' : ''} dans le jeu`}
           >
-            <Layers3 /> {card.owned}
+            <Layers3 /> {card.totalCopies}
           </span>
         ) : null}
       </div>
