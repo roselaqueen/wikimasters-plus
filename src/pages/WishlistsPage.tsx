@@ -291,15 +291,7 @@ export default function WishlistsPage({
               <div>
                 <h2>{selected.name}</h2>
                 <span>
-                  {selected.readOnly ? (
-                    <>
-                      <LockKeyhole size={11} /> Liste dynamique en lecture seule
-                    </>
-                  ) : (
-                    <>
-                      Enregistrée pour le compte <b>{ownerId.slice(0, 8)}…</b>
-                    </>
-                  )}
+                  {selected.readOnly && <> <LockKeyhole size={11} /> Liste dynamique en lecture seule </>}
                 </span>
               </div>
               {!selected.readOnly ? (
