@@ -19,6 +19,7 @@ import { deleteWishlist, getWishlists, putWishlist } from '../services/wishlistR
 import { loadWishlistCard, searchCards } from '../services/cardsApi'
 import type { Card, Rarity, TradeDraft, Wishlist } from '../types/domain'
 import CardItem from '../components/cards/CardItem'
+import CardDetailModal from '../components/cards/CardDetailModal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
@@ -53,6 +54,7 @@ export default function WishlistsPage({
   const [dynamicShare, setDynamicShare] = useState(false)
   const [importValue, setImportValue] = useState('')
   const [notice, setNotice] = useState('')
+  const [detailCard, setDetailCard] = useState<Card | null>(null)
   const [tab, setTab] = useState<'cards' | 'share' | 'contacts'>('cards')
   const initializedOwner = useRef('')
   const searchSequence = useRef(0)
@@ -409,6 +411,7 @@ export default function WishlistsPage({
                       card={card}
                       wanted={!selected.readOnly}
                       removeAction={!selected.readOnly}
+                      onClick={() => setDetailCard(card)}
                       onWant={selected.readOnly ? undefined : () => toggleCard(card)}
                       onExchange={(contact) =>
                         onTrade({
@@ -573,6 +576,24 @@ export default function WishlistsPage({
           <Check size={17} />
           {notice}
         </div>
+      ) : null}
+      {detailCard ? (
+        <CardDetailModal
+          card={detailCard}
+          ownerId={ownerId}
+          onClose={() => setDetailCard(null)}
+          onWishlistChange={() => {
+            void getWishlists(ownerId).then(setLists)
+          }}
+          onExchange={(contact) =>
+            onTrade({
+              contact,
+              requestedCards: selectedCards.filter((item) =>
+                item.contacts.includes(contact),
+              ),
+            })
+          }
+        />
       ) : null}
     </div>
   )

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeftRight, Check, Clock, Plus, X } from 'lucide-react'
+import { ArrowLeftRight, Check, Clock, Plus, RotateCcw, X } from 'lucide-react'
 import { updateTrade } from '../services/tradeApi'
 import TradeComposer from '../components/trades/TradeComposer'
-import type { Trade, TradeDraft } from '../types/domain'
+import type { Card, Trade, TradeDraft } from '../types/domain'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import { useTrades } from '../hooks/useTrades'
+import { useTradeCards } from '../hooks/useTradeCards'
 
 export default function TradesPage({
   currentUserId,
@@ -17,12 +18,17 @@ export default function TradesPage({
   onDraftConsumed: () => void
 }) {
   const { trades, loading, error, reload } = useTrades()
+  const { cards: tradeCards, loading: cardsLoading } = useTradeCards(trades)
   const { run, isPending } = useAsyncAction()
   const [tab, setTab] = useState<'received' | 'sent' | 'history'>('received')
   const [composer, setComposer] = useState(Boolean(initialDraft))
+  const [draft, setDraft] = useState<TradeDraft | null>(initialDraft ?? null)
   const [notice, setNotice] = useState('')
   useEffect(() => {
-    if (initialDraft) setComposer(true)
+    if (initialDraft) {
+      setDraft(initialDraft)
+      setComposer(true)
+    }
   }, [initialDraft])
   const filtered = useMemo(
     () =>
@@ -49,6 +55,35 @@ export default function TradesPage({
       await reload()
     })
   }
+  const counterOffer = (trade: Trade) => {
+    const contact =
+      trade.initiator_id === currentUserId
+        ? trade.recipient?.username
+        : trade.initiator?.username
+    const offeredCards = trade.items
+      .filter((item) => item.offered_by === currentUserId)
+      .map((item) => tradeCards.get(item.card_id))
+      .filter((card): card is Card => Boolean(card))
+    const requestedCards = trade.items
+      .filter((item) => item.offered_by !== currentUserId)
+      .map((item) => tradeCards.get(item.card_id))
+      .filter((card): card is Card => Boolean(card))
+
+    setDraft({
+      contact,
+      offeredCards,
+      requestedCards,
+      offeredCredits:
+        trade.initiator_id === currentUserId
+          ? trade.initiator_wikibidous
+          : trade.recipient_wikibidous,
+      requestedCredits:
+        trade.initiator_id === currentUserId
+          ? trade.recipient_wikibidous
+          : trade.initiator_wikibidous,
+    })
+    setComposer(true)
+  }
   return (
     <div className="trades-page">
       <div className="trades-heading">
@@ -56,7 +91,13 @@ export default function TradesPage({
           <h1>Échanges</h1>
           <p>Gérez vos offres d’échange avec vos amis.</p>
         </div>
-        <button className="button primary" onClick={() => setComposer(true)}>
+        <button
+          className="button primary"
+          onClick={() => {
+            setDraft(null)
+            setComposer(true)
+          }}
+        >
           <Plus />
           Proposer un échange
         </button>
@@ -88,13 +129,15 @@ export default function TradesPage({
               trade.initiator_id === currentUserId
                 ? trade.recipient?.username
                 : trade.initiator?.username
-            const mine = trade.items.filter(
-              (item) => item.offered_by === currentUserId,
-            ).length
-            const theirs = trade.items.length - mine
+            const initiatorCards = trade.items.filter(
+              (item) => item.offered_by === trade.initiator_id,
+            )
+            const recipientCards = trade.items.filter(
+              (item) => item.offered_by === trade.recipient_id,
+            )
             return (
               <article key={trade.id}>
-                <div>
+                <header>
                   <i>{trade.status === 'pending' ? <Clock /> : <Check />}</i>
                   <span>
                     <b>{other ?? 'Utilisateur'}</b>
@@ -102,20 +145,45 @@ export default function TradesPage({
                       {new Date(trade.created_at).toLocaleDateString('fr-FR')}
                     </small>
                   </span>
-                </div>
-                <p>
-                  Vous offrez{' '}
-                  <b>
-                    {mine} carte{mine !== 1 ? 's' : ''}
-                  </b>
+                </header>
+                <div className="trade-card-description">
+                  <section>
+                    <small>{trade.initiator?.username ?? 'Initiateur'} offre</small>
+                    <div className="trade-card-chips">
+                      {initiatorCards.map((item) => {
+                        const card = tradeCards.get(item.card_id)
+                        return (
+                          <span key={item.card_id} data-rarity={card?.rarity}>
+                            {card ? `${card.rarity} · ${card.title}` : 'Carte'}
+                          </span>
+                        )
+                      })}
+                      {trade.initiator_wikibidous ? (
+                        <span>{trade.initiator_wikibidous} WB</span>
+                      ) : null}
+                    </div>
+                  </section>
                   <ArrowLeftRight />
-                  Vous recevez{' '}
-                  <b>
-                    {theirs} carte{theirs !== 1 ? 's' : ''}
-                  </b>
-                </p>
+                  <section>
+                    <small>En échange de</small>
+                    <div className="trade-card-chips">
+                      {recipientCards.map((item) => {
+                        const card = tradeCards.get(item.card_id)
+                        return (
+                          <span key={item.card_id} data-rarity={card?.rarity}>
+                            {card ? `${card.rarity} · ${card.title}` : 'Carte'}
+                          </span>
+                        )
+                      })}
+                      {trade.recipient_wikibidous ? (
+                        <span>{trade.recipient_wikibidous} WB</span>
+                      ) : null}
+                    </div>
+                  </section>
+                  {cardsLoading ? <LoadingSpinner label="Cartes…" /> : null}
+                </div>
                 {trade.status === 'pending' ? (
-                  <div>
+                  <div className="trade-actions">
                     {trade.recipient_id === currentUserId ? (
                       <>
                         <button
@@ -124,6 +192,13 @@ export default function TradesPage({
                         >
                           <X />
                           Refuser
+                        </button>
+                        <button
+                          className="counter-button"
+                          disabled={cardsLoading}
+                          onClick={() => counterOffer(trade)}
+                        >
+                          <RotateCcw /> Contre-offre
                         </button>
                         <button
                           className="button primary"
@@ -181,13 +256,15 @@ export default function TradesPage({
       {composer ? (
         <TradeComposer
           currentUserId={currentUserId}
-          draft={initialDraft ?? undefined}
+          draft={draft ?? undefined}
           onClose={() => {
             setComposer(false)
+            setDraft(null)
             onDraftConsumed()
           }}
           onSent={() => {
             setComposer(false)
+            setDraft(null)
             onDraftConsumed()
             setNotice('Offre envoyée.')
             void reload()

@@ -22,14 +22,22 @@ export default function TradeComposer({
 }) {
   const [friends, setFriends] = useState<Friend[]>([])
   const [friend, setFriend] = useState<Friend | null>(null)
-  const [mine, setMine] = useState<Card[]>([])
+  const [mine, setMine] = useState<Card[]>(draft?.offeredCards ?? [])
   const [theirs, setTheirs] = useState<Card[]>(draft?.requestedCards ?? [])
   const [mineTotal, setMineTotal] = useState(0)
   const [theirsTotal, setTheirsTotal] = useState(0)
   const [knownCards, setKnownCards] = useState(
-    () => new Map((draft?.requestedCards ?? []).map((card) => [card.id, card])),
+    () =>
+      new Map(
+        [...(draft?.offeredCards ?? []), ...(draft?.requestedCards ?? [])].map((card) => [
+          card.id,
+          card,
+        ]),
+      ),
   )
-  const [offered, setOffered] = useState<string[]>([])
+  const [offered, setOffered] = useState<string[]>(
+    draft?.offeredCards?.map((card) => card.id) ?? [],
+  )
   const [requested, setRequested] = useState<string[]>(
     draft?.requestedCards?.map((card) => card.id) ?? [],
   )
@@ -42,8 +50,8 @@ export default function TradeComposer({
   const [theirRarity, setTheirRarity] = useState<Rarity | undefined>()
   const [minePage, setMinePage] = useState(0)
   const [theirPage, setTheirPage] = useState(0)
-  const [credits, setCredits] = useState(0)
-  const [requestedCredits, setRequestedCredits] = useState(0)
+  const [credits, setCredits] = useState(draft?.offeredCredits ?? 0)
+  const [requestedCredits, setRequestedCredits] = useState(draft?.requestedCredits ?? 0)
   const [creditsOpen, setCreditsOpen] = useState(false)
   const [loadingMine, setLoadingMine] = useState(false)
   const [loadingTheirs, setLoadingTheirs] = useState(false)

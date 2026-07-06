@@ -100,6 +100,10 @@ Corps observé pour la création :
 
 Contraintes visibles dans le client officiel : au moins une carte ou des wikibidous, 100 cartes maximum au total, et 10 000 wikibidous maximum par joueur. WikiMasters+ demande une seconde confirmation avant le `POST`. Le proxy distant limite volontairement les mutations à `POST /trades` et `PATCH /trades/<id>`.
 
+Une contre-offre est créée comme une nouvelle proposition préremplie avec les cartes et crédits
+de l'offre initiale. L'offre d'origine n'est pas modifiée automatiquement, car aucune action
+`counter` fiable n'a été observée sur l'API actuelle.
+
 ## Wishlists dynamiques
 
 Le format `WMD1.<payload>` contient uniquement l’identifiant du créateur, l’identifiant de la liste source et son pseudonyme. Lors de l’import, le backend crée une référence en lecture seule (`source_owner_id`, `source_list_id`) et ne duplique pas les cartes. Chaque `GET /wishlists` hydrate le nom et les cartes depuis la source actuelle, sous la forme « pseudo - nom de la wishlist ».

@@ -307,9 +307,16 @@ export default function CardsPage({
       {selected ? (
         <CardDetailModal
           card={selected}
-          wanted={wanted.has(selected.id)}
+          ownerId={ownerId}
           onClose={() => setSelected(null)}
-          onWant={() => toggleWanted(selected.id)}
+          onWishlistChange={(isWanted) =>
+            setWanted((current) => {
+              const next = new Set(current)
+              if (isWanted) next.add(selected.id)
+              else next.delete(selected.id)
+              return next
+            })
+          }
           onExchange={(contact) => onTrade({ contact, requestedCards: [selected] })}
         />
       ) : null}

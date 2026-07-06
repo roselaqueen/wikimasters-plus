@@ -1,5 +1,6 @@
-import { ArrowLeftRight, ExternalLink, Heart, Shield, Swords, X } from 'lucide-react'
+import { ArrowLeftRight, ExternalLink, Shield, Swords, X } from 'lucide-react'
 import GameCard from './GameCard'
+import CardWishlistPicker from '../wishlists/CardWishlistPicker'
 import type { Card, Rarity } from '../../types/domain'
 
 const rarityLabels: Record<Rarity, string> = {
@@ -13,15 +14,15 @@ const rarityLabels: Record<Rarity, string> = {
 
 export default function CardDetailModal({
   card,
-  wanted,
+  ownerId,
   onClose,
-  onWant,
+  onWishlistChange,
   onExchange,
 }: {
   card: Card
-  wanted: boolean
+  ownerId: string
   onClose: () => void
-  onWant: () => void
+  onWishlistChange?: (wanted: boolean) => void
   onExchange: (contact: string) => void
 }) {
   return (
@@ -89,10 +90,11 @@ export default function CardDetailModal({
             Voir l’article sur Wikipédia <ExternalLink size={14} />
           </a>
           <div className="card-detail-actions">
-            <button onClick={onWant}>
-              <Heart size={17} fill={wanted ? 'currentColor' : 'none'} />
-              {wanted ? 'Retirer des souhaits' : 'Ajouter aux souhaits'}
-            </button>
+            <CardWishlistPicker
+              ownerId={ownerId}
+              cardId={card.id}
+              onChange={onWishlistChange}
+            />
             {card.contacts.length ? (
               <button className="primary" onClick={() => onExchange(card.contacts[0])}>
                 <ArrowLeftRight size={17} />

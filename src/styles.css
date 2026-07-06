@@ -2751,3 +2751,183 @@ button .loading-state {
   color: #0b0d0c;
   font: 800 11px/1 system-ui;
 }
+
+/* Détail des échanges et sélecteur de wishlist */
+.trade-list article {
+  grid-template-columns: minmax(150px, 0.7fr) minmax(360px, 2fr);
+}
+
+.trade-list article > header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trade-card-description {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px !important;
+}
+
+.trade-card-description section {
+  min-width: 0;
+}
+
+.trade-card-description small {
+  display: block;
+  margin-bottom: 7px;
+}
+
+.trade-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trade-card-chips span {
+  display: inline-flex !important;
+  width: fit-content;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--rarity, inherit);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trade-card-chips span[data-rarity='L'] {
+  --rarity: #f2c433;
+}
+.trade-card-chips span[data-rarity='UR'] {
+  --rarity: #ff861a;
+}
+.trade-card-chips span[data-rarity='SR'] {
+  --rarity: #ed5d9d;
+}
+.trade-card-chips span[data-rarity='R'] {
+  --rarity: #8c72b4;
+}
+.trade-card-chips span[data-rarity='PC'] {
+  --rarity: #6d91a8;
+}
+.trade-card-chips span[data-rarity='C'] {
+  --rarity: #a8eccd;
+}
+
+.trade-actions {
+  grid-column: 1 / -1;
+  display: flex !important;
+  justify-content: flex-start;
+}
+
+.trade-actions .counter-button {
+  border-color: #765b13;
+  background: #33290d;
+  color: #f6c537;
+}
+
+.trade-selected section > button {
+  width: 120px;
+  height: 169px;
+  flex-basis: 120px;
+}
+
+.trade-selected section > button > .game-card {
+  transform: scale(0.75);
+}
+
+.card-wishlist-picker {
+  position: relative;
+  flex: 1;
+}
+
+.card-wishlist-picker > button {
+  width: 100%;
+}
+
+.card-wishlist-picker > button.wanted {
+  color: #ff6f91;
+}
+
+.wishlist-picker-menu {
+  position: absolute;
+  z-index: 12;
+  left: 0;
+  bottom: calc(100% + 8px);
+  width: min(320px, 80vw);
+  max-height: 290px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 16px 40px #0008;
+}
+
+.wishlist-picker-menu > strong {
+  display: block;
+  padding: 5px 8px 9px;
+}
+
+.wishlist-picker-empty {
+  margin: 4px 8px 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.wishlist-picker-menu > button {
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  border: 0;
+  border-radius: 7px;
+  padding: 6px 8px;
+  background: transparent;
+  color: inherit;
+}
+
+.wishlist-picker-menu > button:hover {
+  background: var(--soft);
+}
+
+.wishlist-picker-menu .empty-check {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.wishlist-picker-menu .create-wishlist {
+  margin-top: 6px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 7px 7px;
+  color: var(--accent);
+}
+
+@media (max-width: 760px) {
+  .trade-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .trade-card-description {
+    grid-template-columns: 1fr;
+  }
+
+  .trade-card-description > svg {
+    transform: rotate(90deg);
+  }
+
+  .trade-selected section > button {
+    width: 104px;
+    height: 146px;
+    flex-basis: 104px;
+  }
+
+  .trade-selected section > button > .game-card {
+    transform: scale(0.65);
+  }
+}

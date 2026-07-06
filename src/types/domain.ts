@@ -34,7 +34,13 @@ export type Wishlist = {
   readOnly?: boolean
 }
 export type Friend = { id: string; username: string; avatarUrl: string | null }
-export type TradeDraft = { contact?: string; requestedCards?: Card[] }
+export type TradeDraft = {
+  contact?: string
+  offeredCards?: Card[]
+  requestedCards?: Card[]
+  offeredCredits?: number
+  requestedCredits?: number
+}
 export type TradeItem = { card_id: string; offered_by: string; card?: unknown }
 export type Trade = {
   id: string
