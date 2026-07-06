@@ -1500,7 +1500,7 @@ button .loading-state {
   object-fit: cover;
   object-position: 50% 28%;
 }
-.game-art > span {
+.game-art > .rarity-badge {
   position: absolute;
   top: 9px;
   left: 9px;
@@ -1510,7 +1510,6 @@ button .loading-state {
   font-weight: 800;
   font-size: 11px;
 }
-.game-art > svg,
 .game-art > button {
   position: absolute;
   top: 8px;
@@ -1527,8 +1526,28 @@ button .loading-state {
   background: #10131199;
   color: #eee;
 }
-.game-art > button.wanted {
-  color: #ff779e;
+.game-art > .owned-count {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  left: auto;
+  min-width: 30px;
+  height: 26px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid #ffffff33;
+  border-radius: 13px;
+  background: #101311d9;
+  color: #fff;
+  font: 800 11px/1 system-ui;
+}
+
+.game-art > .owned-count svg {
+  width: 13px;
+  height: 13px;
 }
 .game-copy {
   position: absolute;
@@ -2467,7 +2486,7 @@ button .loading-state {
   object-fit: cover !important;
   transform: scale(1.8) !important;
 }
-.wishlist-card-list .game-card .game-art > span {
+.wishlist-card-list .game-card .game-art > .rarity-badge {
   position: absolute !important;
   top: 9px !important;
   left: 9px !important;
@@ -2741,7 +2760,7 @@ button .loading-state {
   object-position: 50% 28%;
   border-radius: 0;
 }
-.trade-selected .game-card .game-art > span {
+.trade-selected .game-card .game-art > .rarity-badge {
   position: absolute;
   top: 9px;
   left: 9px;

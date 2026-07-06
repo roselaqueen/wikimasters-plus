@@ -4,7 +4,6 @@ import type { Card } from '../../types/domain'
 
 export default function CardItem({
   card,
-  wanted = false,
   onClick,
   onWant,
   onExchange,
@@ -12,7 +11,6 @@ export default function CardItem({
   showOwnership = false,
 }: {
   card: Card
-  wanted?: boolean
   onClick?: () => void
   onWant?: () => void
   onExchange?: (contact: string) => void
@@ -32,10 +30,10 @@ export default function CardItem({
     <div className="game-card-item">
       <GameCard
         card={card}
-        wanted={wanted}
         onClick={onClick}
-        onWant={onWant}
+        onWant={removeAction ? onWant : undefined}
         removeAction={removeAction}
+        showOwnedCount={!showOwnership}
       />
       {showOwnership ? (
         <div className={card.owned > 0 ? 'card-owned-status owned' : 'card-owned-status'}>

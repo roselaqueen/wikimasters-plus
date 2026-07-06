@@ -1,20 +1,20 @@
-import { Heart, Shield, Swords, Star, X } from 'lucide-react'
+import { Layers3, Shield, Swords, X } from 'lucide-react'
 import type { Card } from '../../types/domain'
 
 export default function GameCard({
   card,
-  wanted = false,
   onClick,
   onWant,
   compact = false,
   removeAction = false,
+  showOwnedCount = true,
 }: {
   card: Card
-  wanted?: boolean
   onClick?: () => void
   onWant?: () => void
   compact?: boolean
   removeAction?: boolean
+  showOwnedCount?: boolean
 }) {
   return (
     <article
@@ -32,31 +32,26 @@ export default function GameCard({
       />
       <div className="game-art">
         <img src={card.image} alt={card.title} loading="lazy" />
-        <span>{card.rarity}</span>
-        {onWant ? (
+        <span className="rarity-badge">{card.rarity}</span>
+        {removeAction && onWant ? (
           <button
-            className={removeAction ? 'remove-card' : wanted ? 'wanted' : ''}
+            className="remove-card"
             onClick={(event) => {
               event.stopPropagation()
               onWant()
             }}
-            aria-label={
-              removeAction
-                ? `Retirer ${card.title}`
-                : wanted
-                  ? 'Retirer des souhaits'
-                  : 'Ajouter aux souhaits'
-            }
+            aria-label={`Retirer ${card.title}`}
           >
-            {removeAction ? (
-              <X size={16} />
-            ) : (
-              <Heart size={15} fill={wanted ? 'currentColor' : 'none'} />
-            )}
+            <X size={16} />
           </button>
-        ) : (
-          <Star size={17} />
-        )}
+        ) : showOwnedCount && card.owned > 0 ? (
+          <span
+            className="owned-count"
+            title={`${card.owned} exemplaire${card.owned > 1 ? 's' : ''}`}
+          >
+            <Layers3 /> {card.owned}
+          </span>
+        ) : null}
       </div>
       <div className="game-copy">
         <h3>{card.title}</h3>

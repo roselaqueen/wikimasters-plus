@@ -36,9 +36,6 @@ export default function CardsPage({
   const [contactsOnly, setContactsOnly] = useState(false)
   const [selected, setSelected] = useState<Card | null>(null)
   const [listView, setListView] = useState(false)
-  const [wanted, setWanted] = useState(
-    () => new Set(initialCards.filter((card) => card.wanted).map((card) => card.id)),
-  )
   const [filtersOpen, setFiltersOpen] = useState(false)
 
   const wishlistEligible = useMemo(
@@ -56,7 +53,6 @@ export default function CardsPage({
       .then((cards) => {
         if (!active) return
         setWishlistCards(cards)
-        setWanted(new Set(cards.map((card) => card.id)))
       })
       .catch(() => undefined)
 
@@ -86,16 +82,6 @@ export default function CardsPage({
   const result = queriedCards.length || collectionOnly ? queriedCards : initialCards
   const resultTotal = queriedTotal || (collectionOnly ? 0 : initialTotal)
 
-  useEffect(() => {
-    setWanted(
-      (previous) =>
-        new Set([
-          ...previous,
-          ...queriedCards.filter((card) => card.wanted).map((card) => card.id),
-        ]),
-    )
-  }, [queriedCards])
-
   const filtered = useMemo(() => {
     const source = ownership === 'wanted' ? wishlistEligible : result
     const text = debouncedQuery.toLocaleLowerCase('fr')
@@ -112,15 +98,6 @@ export default function CardsPage({
       return matchesText && matchesRarity && matchesContacts
     })
   }, [result, wishlistEligible, ownership, debouncedQuery, rarity, contactsOnly])
-
-  const toggleWanted = (cardId: string) => {
-    setWanted((previous) => {
-      const next = new Set(previous)
-      if (next.has(cardId)) next.delete(cardId)
-      else next.add(cardId)
-      return next
-    })
-  }
 
   return (
     <div className="cards-page">
@@ -270,10 +247,8 @@ export default function CardsPage({
               <CardItem
                 key={card.id}
                 card={card}
-                wanted={wanted.has(card.id)}
                 onClick={() => setSelected(card)}
                 onExchange={(contact) => onTrade({ contact, requestedCards: [card] })}
-                onWant={() => toggleWanted(card.id)}
               />
             ))}
           </div>
@@ -309,14 +284,6 @@ export default function CardsPage({
           card={selected}
           ownerId={ownerId}
           onClose={() => setSelected(null)}
-          onWishlistChange={(isWanted) =>
-            setWanted((current) => {
-              const next = new Set(current)
-              if (isWanted) next.add(selected.id)
-              else next.delete(selected.id)
-              return next
-            })
-          }
           onExchange={(contact) => onTrade({ contact, requestedCards: [selected] })}
         />
       ) : null}

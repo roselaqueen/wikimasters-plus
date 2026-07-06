@@ -291,7 +291,12 @@ export default function WishlistsPage({
               <div>
                 <h2>{selected.name}</h2>
                 <span>
-                  {selected.readOnly && <> <LockKeyhole size={11} /> Liste dynamique en lecture seule </>}
+                  {selected.readOnly && (
+                    <>
+                      {' '}
+                      <LockKeyhole size={11} /> Liste dynamique en lecture seule{' '}
+                    </>
+                  )}
                 </span>
               </div>
               {!selected.readOnly ? (
@@ -409,7 +414,6 @@ export default function WishlistsPage({
                     <CardItem
                       key={card.id}
                       card={card}
-                      wanted={!selected.readOnly}
                       removeAction={!selected.readOnly}
                       showOwnership
                       onClick={() => setDetailCard(card)}
