@@ -41,7 +41,7 @@ export default function CardItem({
           <span>
             {card.owned > 0
               ? `Possédée · ${card.owned} exemplaire${card.owned > 1 ? 's' : ''}`
-              : 'Non possédée'}
+              : 'Non possédée · 0 exemplaire'}
           </span>
         </div>
       ) : null}

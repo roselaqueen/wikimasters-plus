@@ -44,7 +44,7 @@ export default function GameCard({
           >
             <X size={16} />
           </button>
-        ) : showOwnedCount && card.owned > 0 ? (
+        ) : showOwnedCount ? (
           <span
             className="owned-count"
             title={`${card.owned} exemplaire${card.owned > 1 ? 's' : ''}`}
