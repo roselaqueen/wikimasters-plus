@@ -2216,6 +2216,155 @@ button .loading-state {
     grid-template-columns: repeat(2, 140px);
   }
 }
+
+/* Responsive final des wishlists. */
+.owner-groups article > button {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 4px 0 0;
+}
+
+@media (max-width: 600px) {
+  .wishlists-page {
+    width: 100%;
+    padding: 14px;
+    overflow: hidden;
+  }
+
+  .wishlist-heading {
+    min-height: 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wishlist-heading h1 {
+    font-size: 30px;
+  }
+
+  .wishlist-heading > button,
+  .wishlist-heading .primary {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .wishlist-layout,
+  .wishlist-workspace {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .wishlist-layout {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .wishlist-sidebar {
+    width: 100%;
+    padding: 10px 8px;
+    gap: 6px;
+  }
+
+  .wishlist-sidebar > button {
+    min-width: 138px;
+    flex: 0 0 138px;
+  }
+
+  .wishlist-workspace > header {
+    height: auto;
+    min-height: 68px;
+    padding: 10px 12px;
+  }
+
+  .wishlist-workspace > header h2 {
+    font-size: 20px;
+    overflow-wrap: anywhere;
+  }
+
+  .wishlist-tabs {
+    width: 100%;
+    padding: 8px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .wishlist-tabs button {
+    flex: 0 0 auto;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+
+  .wishlist-cards-tab,
+  .share-panel,
+  .owners-panel {
+    width: 100%;
+    min-width: 0;
+    padding: 12px !important;
+  }
+
+  .wishlist-search-tools,
+  .wishlist-search-tools .search,
+  .wishlist-search-tools select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .wishlist-suggestions {
+    width: calc(100% - 26px);
+  }
+
+  .wishlist-card-list {
+    grid-template-columns: repeat(2, 160px) !important;
+    justify-content: center;
+    gap: 16px 8px;
+  }
+
+  .share-block {
+    grid-template-columns: 24px minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .share-block > button,
+  .dynamic-option,
+  .encoded {
+    grid-column: 1 / -1;
+  }
+
+  .encoded {
+    grid-template-columns: 1fr;
+  }
+
+  .encoded button {
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  .owners-summary {
+    grid-template-columns: 30px minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .owners-summary button {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  .owner-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-groups article {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 370px) {
+  .wishlist-card-list {
+    grid-template-columns: 160px !important;
+  }
+}
 @media (max-width: 520px) {
   .wishlist-card-list,
   .card-grid,
