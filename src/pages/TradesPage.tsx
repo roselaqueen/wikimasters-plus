@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeftRight, Check, Clock, Plus, X } from 'lucide-react'
+import { ArrowLeftRight, Check, Clock, Plus, RotateCcw, X } from 'lucide-react'
 import { updateTrade } from '../services/tradeApi'
 import TradeComposer from '../components/trades/TradeComposer'
 import TradeDetailModal from '../components/trades/TradeDetailModal'
@@ -209,6 +209,13 @@ export default function TradesPage({
                         >
                           <X />
                           Refuser
+                        </button>
+                        <button
+                          className="counter-button"
+                          disabled={cardsLoading}
+                          onClick={() => counterOffer(trade)}
+                        >
+                          <RotateCcw /> Contre-offre
                         </button>
                         <button
                           className="button primary"
