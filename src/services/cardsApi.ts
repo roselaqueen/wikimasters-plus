@@ -88,7 +88,13 @@ export async function searchCards(query: string, rarity?: Rarity): Promise<Card[
 }
 
 export async function loadOfficialWishlistCardIds(): Promise<string[]> {
-  const cards = await apiGet<ApiCard[]>('/cards?page=0&sort=rarity&wishlist=1')
+  const response = await apiGet<ApiCard[] | { cards: ApiCard[] }>(
+    '/cards?page=0&sort=rarity&wishlist=1',
+  )
+  const cards = Array.isArray(response) ? response : response.cards
+  if (!Array.isArray(cards)) {
+    throw new Error('Format de wishlist WikiMasters inattendu.')
+  }
   return [...new Set(cards.map((card) => card.id))]
 }
 
