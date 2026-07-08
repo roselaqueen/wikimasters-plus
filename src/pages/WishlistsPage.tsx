@@ -3,6 +3,7 @@ import {
   Check,
   Clipboard,
   Copy,
+  DownloadCloud,
   Download,
   Heart,
   Link2,
@@ -16,7 +17,11 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { deleteWishlist, getWishlists, putWishlist } from '../services/wishlistRepository'
-import { loadWishlistCard, searchCards } from '../services/cardsApi'
+import {
+  loadOfficialWishlistCardIds,
+  loadWishlistCards,
+  searchCards,
+} from '../services/cardsApi'
 import type { Card, Rarity, TradeDraft, Wishlist } from '../types/domain'
 import CardItem from '../components/cards/CardItem'
 import CardDetailModal from '../components/cards/CardDetailModal'
@@ -138,7 +143,7 @@ export default function WishlistsPage({
       (id) => !resolved.some((card) => card.id === id),
     )
     if (!missing.length) return
-    Promise.all(missing.map((id) => loadWishlistCard(id, ownerId))).then((found) =>
+    loadWishlistCards(missing, ownerId).then((found) =>
       setResolved((prev) => [
         ...new Map([...prev, ...found].map((card) => [card.id, card])).values(),
       ]),
@@ -229,6 +234,31 @@ export default function WishlistsPage({
         )
       } catch (error) {
         setNotice(error instanceof Error ? error.message : 'Import impossible.')
+      }
+    })
+  const importOfficialWishlist = () =>
+    run('import-official-wishlist', async () => {
+      try {
+        const cardIds = await loadOfficialWishlistCardIds()
+        const existing = lists.find(
+          (list) => !list.readOnly && list.name === 'Wishlist WikiMasters',
+        )
+        const next: Wishlist = existing
+          ? { ...existing, cardIds, updatedAt: Date.now() }
+          : makeWishlist(ownerId, 'Wishlist WikiMasters', cardIds)
+
+        await putWishlist(next)
+        const refreshed = await getWishlists(ownerId)
+        setLists(refreshed)
+        setSelectedId(next.id)
+        setTab('cards')
+        setNotice(
+          `${cardIds.length} carte${cardIds.length > 1 ? 's' : ''} importée${cardIds.length > 1 ? 's' : ''} depuis WikiMasters.`,
+        )
+      } catch (error) {
+        setNotice(
+          error instanceof Error ? error.message : 'Import WikiMasters impossible.',
+        )
       }
     })
   const owners = useMemo(() => groupCardsByOwner(selectedCards), [selectedCards])
@@ -449,6 +479,29 @@ export default function WishlistsPage({
             ) : null}
             {tab === 'share' ? (
               <div className="share-panel">
+                <div className="share-block official-wishlist-import">
+                  <DownloadCloud />
+                  <div>
+                    <h3>Importer la wishlist WikiMasters</h3>
+                    <p>
+                      Crée ou synchronise une liste avec les souhaits de votre compte sur
+                      le site original.
+                    </p>
+                  </div>
+                  <button
+                    className="button primary small"
+                    disabled={isPending('import-official-wishlist')}
+                    onClick={importOfficialWishlist}
+                  >
+                    {isPending('import-official-wishlist') ? (
+                      <LoadingSpinner label="Import…" />
+                    ) : (
+                      <>
+                        <DownloadCloud size={16} /> Importer
+                      </>
+                    )}
+                  </button>
+                </div>
                 <div className="share-block">
                   <Share2 />
                   <div>

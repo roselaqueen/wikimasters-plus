@@ -87,6 +87,11 @@ export async function searchCards(query: string, rarity?: Rarity): Promise<Card[
   return (await queryGlobalCards({ query, rarity })).cards
 }
 
+export async function loadOfficialWishlistCardIds(): Promise<string[]> {
+  const cards = await apiGet<ApiCard[]>('/cards?page=0&sort=rarity&wishlist=1')
+  return [...new Set(cards.map((card) => card.id))]
+}
+
 export function mapCollectionItem(value: unknown): Card | null {
   if (!value || typeof value !== 'object') return null
   const row = value as Record<string, unknown>
@@ -196,4 +201,25 @@ export async function loadWishlistCard(id: string, accountId: string): Promise<C
   } finally {
     wishlistCardPending.delete(cacheKey)
   }
+}
+
+export async function loadWishlistCards(
+  ids: string[],
+  accountId: string,
+  concurrency = 4,
+): Promise<Card[]> {
+  const results = new Array<Card>(ids.length)
+  let nextIndex = 0
+
+  const worker = async () => {
+    while (nextIndex < ids.length) {
+      const index = nextIndex++
+      results[index] = await loadWishlistCard(ids[index], accountId)
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, ids.length) }, () => worker()),
+  )
+  return results
 }

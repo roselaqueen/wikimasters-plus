@@ -5,7 +5,7 @@ import CardItem from '../components/cards/CardItem'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { useCardsQuery } from '../hooks/useCardsQuery'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
-import { loadWishlistCard } from '../services/cardsApi'
+import { loadWishlistCards } from '../services/cardsApi'
 import type { Card, Rarity, TradeDraft } from '../types/domain'
 import { getWishlists } from '../services/wishlistRepository'
 
@@ -49,7 +49,7 @@ export default function CardsPage({
 
     getWishlists(ownerId)
       .then((lists) => [...new Set(lists.flatMap((list) => list.cardIds))])
-      .then((ids) => Promise.all(ids.map((id) => loadWishlistCard(id, ownerId))))
+      .then((ids) => loadWishlistCards(ids, ownerId))
       .then((cards) => {
         if (!active) return
         setWishlistCards(cards)
