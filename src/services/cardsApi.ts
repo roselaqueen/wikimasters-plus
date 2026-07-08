@@ -100,17 +100,15 @@ export async function loadOfficialWishlistCardIds(): Promise<string[]> {
       throw new Error('Format de wishlist WikiMasters inattendu.')
     }
 
+    const previousSize = ids.size
     cards.forEach((card) => ids.add(card.id))
 
-    const total = Array.isArray(response) ? undefined : response.total
-    const hasMore = Array.isArray(response) ? undefined : response.searchHasMore
-    if (
-      cards.length === 0 ||
-      cards.length < pageSize ||
-      hasMore === false ||
-      (typeof total === 'number' && ids.size >= total)
-    ) {
+    if (cards.length === 0 || cards.length < pageSize) {
       return [...ids]
+    }
+
+    if (ids.size === previousSize) {
+      throw new Error(`La page ${page + 1} de la wishlist répète les cartes précédentes.`)
     }
   }
 
