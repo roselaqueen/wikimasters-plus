@@ -77,9 +77,10 @@ Le projet utilise un proxy Vite local et une authentification Supabase normale. 
   consulte la liste, jamais réutilisés depuis le compte du créateur ou une session précédente.
 - Dans `GET /api/cards`, `quantities[cardId]` représente le nombre total d'exemplaires en
   circulation. La possession personnelle est distincte et provient de `ownedCardIds`.
-- `GET /api/cards?page=0&sort=rarity&wishlist=1` retourne la wishlist officielle sous forme de
-  tableau de cartes. WikiMasters+ peut l'importer ou la resynchroniser dans une liste dédiée ; la
-  résolution complémentaire des cartes est limitée à quatre requêtes simultanées.
+- `GET /api/cards?page=<n>&sort=rarity&wishlist=1` retourne la wishlist officielle par pages de
+  50 cartes. WikiMasters+ parcourt toutes les pages, déduplique les identifiants, puis importe ou
+  resynchronise une liste dédiée. La résolution complémentaire est limitée à quatre requêtes
+  simultanées.
 - L’application fonctionne uniquement avec les données réelles du compte connecté.
 - Les mutations de paquet, enchère et profil restent volontairement non connectées. Les échanges sont activés avec confirmation explicite et un proxy limité aux seules routes documentées ci-dessous.
 

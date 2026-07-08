@@ -88,14 +88,33 @@ export async function searchCards(query: string, rarity?: Rarity): Promise<Card[
 }
 
 export async function loadOfficialWishlistCardIds(): Promise<string[]> {
-  const response = await apiGet<ApiCard[] | { cards: ApiCard[] }>(
-    '/cards?page=0&sort=rarity&wishlist=1',
-  )
-  const cards = Array.isArray(response) ? response : response.cards
-  if (!Array.isArray(cards)) {
-    throw new Error('Format de wishlist WikiMasters inattendu.')
+  const ids = new Set<string>()
+  const pageSize = 50
+
+  for (let page = 0; page < 100; page += 1) {
+    const response = await apiGet<
+      ApiCard[] | { cards: ApiCard[]; total?: number; searchHasMore?: boolean }
+    >(`/cards?page=${page}&sort=rarity&wishlist=1`)
+    const cards = Array.isArray(response) ? response : response.cards
+    if (!Array.isArray(cards)) {
+      throw new Error('Format de wishlist WikiMasters inattendu.')
+    }
+
+    cards.forEach((card) => ids.add(card.id))
+
+    const total = Array.isArray(response) ? undefined : response.total
+    const hasMore = Array.isArray(response) ? undefined : response.searchHasMore
+    if (
+      cards.length === 0 ||
+      cards.length < pageSize ||
+      hasMore === false ||
+      (typeof total === 'number' && ids.size >= total)
+    ) {
+      return [...ids]
+    }
   }
-  return [...new Set(cards.map((card) => card.id))]
+
+  throw new Error('La wishlist WikiMasters dépasse la limite d’import autorisée.')
 }
 
 export function mapCollectionItem(value: unknown): Card | null {
